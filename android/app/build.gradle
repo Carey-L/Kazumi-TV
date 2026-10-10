@@ -61,11 +61,10 @@ android {
         }
     }
 
+    // The tv flavor is the only build target, but it stays a flavor so that
+    // `appFlavor` resolves to "tv" and isTvBuild remains true.
     flavorDimensions "device"
     productFlavors {
-        mobile {
-            dimension "device"
-        }
         tv {
             dimension "device"
             applicationIdSuffix ".tv"

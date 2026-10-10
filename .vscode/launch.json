@@ -2,18 +2,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Kazumi Android (mobile)",
-      "request": "launch",
-      "type": "dart",
-      "program": "lib/main.dart",
-      "flutterMode": "debug",
-      "toolArgs": [
-        "--flavor",
-        "mobile",
-        "--no-enable-impeller"
-      ]
-    },
-    {
       "name": "Kazumi Android TV",
       "request": "launch",
       "type": "dart",

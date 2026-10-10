@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/services/logging/logger.dart';
-import 'package:window_manager/window_manager.dart';
 
 class DisplayModeService {
   DisplayModeService._();
@@ -14,13 +13,6 @@ class DisplayModeService {
 
   static Future<void> applyVideoFullscreen(bool fullscreen) {
     return _pendingFullscreen = _pendingFullscreen.then((_) async {
-      if (defaultTargetPlatform == TargetPlatform.linux ||
-          defaultTargetPlatform == TargetPlatform.macOS ||
-          defaultTargetPlatform == TargetPlatform.windows) {
-        await _attempt(() => windowManager.setFullScreen(fullscreen));
-        return;
-      }
-
       // Restore system orientation on exit, including an existing landscape.
       await _attempt(() => SystemChrome.setPreferredOrientations(
             fullscreen

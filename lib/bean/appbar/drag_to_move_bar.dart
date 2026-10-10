@@ -1,25 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:window_manager/window_manager.dart';
-import 'package:kazumi/utils/device.dart';
 
 /// A widget for drag to move window.
 ///
-/// When you have hidden the title bar, you can add this widget to move the window position.
-///
-/// {@tool snippet}
-///
-/// The sample creates a red box, drag the box to move the window.
-///
-/// ```dart
-/// DragToMoveArea(
-///   child: Container(
-///     width: 300,
-///     height: 32,
-///     color: Colors.red,
-///   ),
-/// )
-/// ```
-/// {@end-tool}
+/// Android TV has no window to drag, so this simply forwards its child.
+/// The widget is kept so call sites stay unchanged if a movable window is
+/// reintroduced on another form factor.
 class DragToMoveArea extends StatelessWidget {
   const DragToMoveArea({
     super.key,
@@ -29,11 +14,5 @@ class DragToMoveArea extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onPanStart: (_) => (isDesktop()) ? windowManager.startDragging() : null,
-      child: child,
-    );
-  }
+  Widget build(BuildContext context) => child;
 }

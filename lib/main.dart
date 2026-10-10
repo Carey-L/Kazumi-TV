@@ -10,14 +10,10 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:kazumi/services/network/metered_network_service.dart';
 import 'package:kazumi/services/network/ech_http_licenses.dart';
 import 'package:kazumi/services/network/proxy_manager.dart';
-import 'package:kazumi/services/network/system_proxy_service.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:kazumi/pages/error/storage_error_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:kazumi/utils/device.dart';
-import 'package:kazumi/services/platform/desktop_window_config.dart';
 import 'package:kazumi/services/platform/webview_feature_service.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/navigation.dart';
@@ -53,14 +49,6 @@ void main() async {
   } catch (e) {
     debugPrint('Storage initialization failed: $e');
 
-    if (isDesktop()) {
-      await windowManager.ensureInitialized();
-      windowManager.waitUntilReadyToShow(null, () async {
-        // window_manager controls desktop visibility to avoid startup flicker.
-        await windowManager.show();
-        await windowManager.focus();
-      });
-    }
     runApp(MaterialApp(
         title: '初始化失败',
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
@@ -74,30 +62,6 @@ void main() async {
           return const StorageErrorPage();
         }));
     return;
-  }
-  final showWindowButton = DesktopWindowConfig.showWindowButton;
-  if (isDesktop()) {
-    await windowManager.ensureInitialized();
-    final lowResolution = await isLowResolution();
-    final windowOptions = WindowOptions(
-      size: lowResolution ? const Size(840, 600) : const Size(1280, 860),
-      center: true,
-      skipTaskbar: false,
-      // macOS embeds native buttons in the Flutter view.
-      titleBarStyle: (Platform.isMacOS || !showWindowButton)
-          ? TitleBarStyle.hidden
-          : TitleBarStyle.normal,
-      windowButtonVisibility: showWindowButton,
-      title: 'Kazumi',
-    );
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
-      // window_manager controls desktop visibility to avoid startup flicker.
-      await windowManager.show();
-      await windowManager.focus();
-    });
-  }
-  if (Platform.isWindows) {
-    SystemProxyService.init();
   }
   await MeteredNetworkService.refresh();
   ProxyManager.applyProxy();

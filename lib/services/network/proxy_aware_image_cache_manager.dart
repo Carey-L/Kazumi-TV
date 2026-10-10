@@ -7,7 +7,6 @@ import 'package:kazumi/services/network/bangumi_ech_image_service.dart';
 import 'package:kazumi/services/network/image_acceleration.dart';
 import 'package:kazumi/services/network/image_file_service.dart';
 import 'package:kazumi/services/network/proxy_utils.dart';
-import 'package:kazumi/services/network/system_proxy_service.dart';
 import 'package:kazumi/services/storage/storage.dart';
 
 class ProxyAwareImageCacheManager extends CacheManager with ImageCacheManager {
@@ -40,12 +39,6 @@ class ProxyAwareImageCacheManager extends CacheManager with ImageCacheManager {
     if (proxy != null) {
       return Uri(scheme: 'http', host: proxy.$1, port: proxy.$2);
     }
-    if (Platform.isWindows) {
-      final systemProxy = SystemProxyService.findProxy(uri);
-      if (systemProxy.startsWith('PROXY ')) {
-        return Uri.parse('http://${systemProxy.substring(6)}');
-      }
-    }
     return null;
   }
 
@@ -55,8 +48,6 @@ class ProxyAwareImageCacheManager extends CacheManager with ImageCacheManager {
     if (proxy != null) {
       client.findProxy = (_) => 'PROXY ${proxy.$1}:${proxy.$2}';
       client.badCertificateCallback = (cert, host, port) => true;
-    } else if (Platform.isWindows) {
-      client.findProxy = SystemProxyService.findProxy;
     }
     return IOClient(client);
   }

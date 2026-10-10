@@ -2,8 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:kazumi/services/logging/logger.dart';
-import 'package:window_manager/window_manager.dart';
-import 'package:kazumi/utils/device.dart';
 
 class PipUtils {
   static bool androidPIPInited = false;
@@ -109,27 +107,6 @@ class PipUtils {
     } on PlatformException catch (e) {
       KazumiLogger().e("Failed to set Android PIP page state: '${e.message}'.");
     }
-  }
-
-  // 进入桌面设备小窗模式，并用播放源比例固定窗口宽高比
-  static Future<void> enterDesktopPIPWindow(
-      {int width = 16, int height = 9}) async {
-    final Size aspectSize = getPIPAspectSize(width: width, height: height);
-    final double aspectRatio = aspectSize.width / aspectSize.height;
-    const double pipWidth = 480;
-    await windowManager.setAlwaysOnTop(true);
-    await windowManager.setAspectRatio(aspectRatio);
-    await windowManager.setSize(Size(pipWidth, pipWidth / aspectRatio));
-  }
-
-  // 退出桌面设备小窗模式
-  static Future<void> exitDesktopPIPWindow() async {
-    final lowResolution = await isLowResolution();
-    await windowManager.setAlwaysOnTop(false);
-    await windowManager.setAspectRatio(0);
-    await windowManager
-        .setSize(lowResolution ? const Size(800, 600) : const Size(1280, 860));
-    await windowManager.center();
   }
 
   static void initPipHandler({

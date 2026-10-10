@@ -47,9 +47,14 @@ build/tv/Kazumi-TV-armv7-arm64-release.apk
 ```
 
 The scripts inspect the completed APK and fail unless both requested ABI
-variants are present. To build the existing phone package, use the `mobile`
-flavor:
+variants are present. `tv` is the only flavor, so a plain build targets it:
 
 ```bash
-flutter build apk --release --flavor mobile
+flutter build apk --release
 ```
+
+Note that a plain `flutter build` needs CMake 3.22 or newer on `PATH`. The
+`ech_http` dependency selects an Android SDK CMake by comparing version
+directory names as strings, which ranks `3.6.4111459` above `3.22.1`. Both
+scripts work around this by prepending the newest SDK CMake to `PATH`, so
+prefer them over invoking Flutter directly.

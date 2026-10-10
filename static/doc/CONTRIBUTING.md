@@ -34,11 +34,23 @@ flutter run
 # flutter run --profile
 # flutter run --release
 
+# tv 是唯一的产品 flavor，pubspec.yaml 已设置 default-flavor
+flutter run
+
 # 为生产环境编译
 flutter build apk --release
-# flutter build windows --release
-# flutter build macos --release
-# ...
+```
+
+Android TV 包由独立的 `android/app/src/tv` source set 提供。以下命令会构建并校验一个同时包含 `arm64-v8a` 和 `armeabi-v7a` 的 APK：
+
+```bash
+bash android/app/src/tv/build-tv.sh
+```
+
+Windows PowerShell 使用：
+
+```powershell
+.\android\app\src\tv\build-tv.ps1
 ```
 
 ## 代码质量

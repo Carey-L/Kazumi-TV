@@ -20,7 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/pages/player/video_details_sheet.dart';
@@ -36,7 +35,6 @@ import 'package:kazumi/pages/my/my_controller.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 import 'package:kazumi/services/player/audio_controller.dart';
 import 'package:kazumi/services/player/timed_shutdown_service.dart';
-import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/services/platform/player_menu_service.dart';
 
 class PlayerItem extends StatefulWidget {
@@ -70,7 +68,6 @@ class PlayerItem extends StatefulWidget {
 
 class _PlayerItemState extends State<PlayerItem>
     with
-        WindowListener,
         WidgetsBindingObserver,
         TickerProviderStateMixin,
         KazumiDialogOwner {
@@ -345,12 +342,6 @@ class _PlayerItemState extends State<PlayerItem>
       await _updateAndroidPIPActions(force: true);
       return;
     }
-    if (isDesktop() && videoPageController.isPip) {
-      await PipUtils.enterDesktopPIPWindow(
-        width: playerController.debug.playerWidth,
-        height: playerController.debug.playerHeight,
-      );
-    }
   }
 
   void _initKeyboardActions() {
@@ -476,9 +467,6 @@ class _PlayerItemState extends State<PlayerItem>
   void handleShortcutExitFullscreen() {
     if (videoPageController.isFullscreen) {
       unawaited(videoPageController.fullscreen.setFullscreen(false));
-    } else if (isDesktop() && !Platform.isMacOS) {
-      playerController.pause();
-      windowManager.hide();
     }
   }
 
@@ -492,7 +480,7 @@ class _PlayerItemState extends State<PlayerItem>
 
   void _handleTap(PointerDeviceKind? pointerKind) {
     if (shouldToggleControllerOnPrimaryTap(
-      isDesktop: isDesktop(),
+      isDesktop: false,
       pointerKind: pointerKind,
     )) {
       _toggleVideoController();
@@ -503,7 +491,7 @@ class _PlayerItemState extends State<PlayerItem>
 
   void _handleDoubleTap(PointerDeviceKind? pointerKind) {
     if (shouldToggleFullscreenOnDoubleTap(
-      isDesktop: isDesktop(),
+      isDesktop: false,
       isPip: videoPageController.isPip,
       pointerKind: pointerKind,
     )) {
@@ -741,47 +729,7 @@ class _PlayerItemState extends State<PlayerItem>
 
   Future<void> handleScreenshot() async {
     if (!mounted) return;
-    if (!isDesktop()) {
-      await _saveScreenshotToGallery();
-      return;
-    }
-    if (_screenshots.busy || _screenshotSheetOpen) return;
-    final episode = videoPageController.playbackEpisode;
-    final source = videoPageController.src;
-    final player = playerController.playback.mediaPlayer;
-    if (videoPageController.loading || player == null) {
-      KazumiDialog.showToast(message: '暂未获取到画面，请等视频显示后重试');
-      return;
-    }
-    final added = await _screenshots.capture(
-      capturePng: playerController.screenshotPng,
-      title: videoPageController.title,
-      episode:
-          videoPageController.resolveEpisode(episode)?.displayTitle ??
-          '第 ${episode.episode} 集',
-      position: player.state.position,
-      isCurrent: () =>
-          mounted &&
-          !videoPageController.loading &&
-          videoPageController.playbackEpisode == episode &&
-          videoPageController.src == source &&
-          identical(playerController.playback.mediaPlayer, player),
-    );
-    if (!mounted) return;
-    if (added) _playScreenshotFeedback();
-    if (!_screenshotSheetOpen) {
-      showVideoController();
-      if (!added || _screenshots.candidates.length == 1) {
-        KazumiDialog.showToast(
-          message: added
-              ? '已截取画面，点击右上角图库挑选保存'
-              : _screenshots.message ?? '截图失败，请重试',
-          showActionButton: _screenshots.candidates.isNotEmpty,
-          actionLabel: '挑选截图',
-          onActionPressed: showScreenshotCandidates,
-        );
-      }
-    }
+    await _saveScreenshotToGallery();
   }
 
   Future<void> _saveScreenshotToGallery() async {
@@ -808,7 +756,7 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   Future<void> showScreenshotCandidates() async {
-    if (!isDesktop() || !mounted || _screenshotSheetOpen || _screenshots.busy) {
+    if (!mounted || _screenshotSheetOpen || _screenshots.busy) {
       return;
     }
     _screenshotSheetOpen = true;
@@ -1182,12 +1130,6 @@ class _PlayerItemState extends State<PlayerItem>
       unawaited(_updateAndroidPIPActions());
       _syncAudioServiceState();
       _emitDanmakusForCurrentPosition();
-      if (!playerController.panel.volumeSeeking) {
-        if (isDesktop()) {
-          playerController.playback
-              .applyExternalVolume(playerController.playback.playerVolume);
-        }
-      }
       if (!Platform.isWindows &&
           !Platform.isMacOS &&
           !Platform.isLinux &&
@@ -1257,11 +1199,6 @@ class _PlayerItemState extends State<PlayerItem>
       playerController: playerController,
       changeEpisode: widget.changeEpisode,
     );
-  }
-
-  @override
-  void onWindowRestore() {
-    playerController.danmaku.canvasController.clear();
   }
 
   @override
@@ -1357,7 +1294,6 @@ class _PlayerItemState extends State<PlayerItem>
         GStorage.getSetting(SettingsKeys.defaultShortcutForwardPlaySpeed);
     unawaited(_bindAudioService());
     playerTimer = getPlayerTimer();
-    windowManager.addListener(this);
     showVideoController();
   }
 
@@ -1367,7 +1303,6 @@ class _PlayerItemState extends State<PlayerItem>
     _fullscreenListener();
     _playerSizeListener();
     WidgetsBinding.instance.removeObserver(this);
-    windowManager.removeListener(this);
     playerController.seeking.invalidateInteractiveSeek();
     playerTimer?.cancel();
     hideTimer?.cancel();
@@ -1396,21 +1331,6 @@ class _PlayerItemState extends State<PlayerItem>
                       !playerController.panel.showVideoController)
                   ? SystemMouseCursors.none
                   : SystemMouseCursors.basic,
-              onHover: (PointerEvent pointerEvent) {
-                // Android taps can emit hover events.
-                if (isDesktop()) {
-                  if (pointerEvent.position.dy > 50 &&
-                      pointerEvent.position.dy <
-                          MediaQuery.of(context).size.height - 70) {
-                    showVideoController();
-                  } else {
-                    if (!playerController.panel.showVideoController) {
-                      _panelVisibilityController.forward();
-                      playerController.panel.showVideoController = true;
-                    }
-                  }
-                }
-              },
               child: Listener(
                 onPointerSignal: (pointerSignal) {
                   if (pointerSignal is PointerScrollEvent) {
@@ -1573,7 +1493,7 @@ class _PlayerItemState extends State<PlayerItem>
                       top: 25,
                       right: 15,
                       bottom: 15,
-                      child: (isDesktop() || playerController.panel.lockPanel)
+                      child: playerController.panel.lockPanel
                           ? Container()
                           : PlayerGestureDetector(
                               onSeekStart: () {

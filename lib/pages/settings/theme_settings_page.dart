@@ -10,7 +10,6 @@ import 'package:kazumi/bean/settings/color_type.dart';
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/bean/settings/settings_dropdown_tile.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/theme.dart';
 
@@ -106,12 +105,6 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
     setState(() {
       defaultThemeMode = theme;
     });
-
-    // Update Windows title bar theme
-    if (Platform.isWindows) {
-      await windowManager.setBrightness(
-          themeProvider.isEffectiveDark() ? Brightness.dark : Brightness.light);
-    }
   }
 
   void updateOledEnhance() {
@@ -247,24 +240,6 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
               ),
             ],
           ),
-          if (isDesktop())
-            SettingsSection(
-              title: Text('窗口'),
-              tiles: [
-                SettingsTile.switchTile(
-                  leading: Icons.web_asset_rounded,
-                  onToggle: (value) async {
-                    showWindowButton = value ?? !showWindowButton;
-                    await GStorage.putSetting(
-                        SettingsKeys.showWindowButton, showWindowButton);
-                    setState(() {});
-                  },
-                  title: Text('使用系统标题栏'),
-                  description: Text('重启应用生效'),
-                  initialValue: showWindowButton,
-                ),
-              ],
-            ),
           if (Platform.isAndroid)
             SettingsSection(
               title: Text('屏幕'),

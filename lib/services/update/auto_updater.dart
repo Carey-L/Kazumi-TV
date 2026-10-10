@@ -10,19 +10,12 @@ import 'package:kazumi/services/storage/storage.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/date_time.dart';
 import 'package:kazumi/utils/crypto.dart';
 import 'package:kazumi/utils/version.dart';
 
 enum InstallationType {
-  windowsMsix,
-  windowsPortable,
-  linuxDeb,
-  linuxTar,
-  macosDmg,
   androidApk,
-  ios,
   unknown,
 }
 
@@ -90,17 +83,8 @@ String getUpdateFileHashFromAsset(Map<String, dynamic> asset) {
 
 List<String> getUpdateFilePatterns(InstallationType installationType) {
   switch (installationType) {
-    case InstallationType.windowsMsix:
-      return ['windows', '.msix'];
-    case InstallationType.windowsPortable:
-      return ['windows', '.zip'];
-    case InstallationType.macosDmg:
-      return ['macos', '.dmg'];
     case InstallationType.androidApk:
       return ['android', '.apk'];
-    case InstallationType.linuxDeb:
-    case InstallationType.linuxTar:
-    case InstallationType.ios:
     case InstallationType.unknown:
       return [];
   }
@@ -116,16 +100,7 @@ class AutoUpdater {
   final DownloadHttpClient _downloadClient = DownloadHttpClient.instance;
 
   List<InstallationType> _detectAvailableInstallationTypes() {
-    if (Platform.isWindows) {
-      return [InstallationType.windowsMsix, InstallationType.windowsPortable];
-    }
-    if (Platform.isLinux) {
-      return [InstallationType.linuxDeb, InstallationType.linuxTar];
-    }
-    if (Platform.isMacOS) return [InstallationType.macosDmg];
-    if (Platform.isIOS) return [InstallationType.ios];
-    if (Platform.isAndroid) return [InstallationType.androidApk];
-    return [InstallationType.unknown];
+    return [InstallationType.androidApk];
   }
 
   Future<UpdateInfo?> checkForUpdates() async {
@@ -216,81 +191,79 @@ class AutoUpdater {
                   ),
                 ],
                 const SizedBox(height: 8),
-                if (!Platform.isLinux && !Platform.isIOS) ...[
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '选择安装类型:',
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
-                        const SizedBox(height: 8),
-                        ...updateInfo.availableInstallationTypes.map((type) {
-                          return Container(
-                            margin: const EdgeInsets.symmetric(vertical: 2),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(4),
-                                onTap: () {
-                                  KazumiDialog.dismiss();
-                                  _downloadUpdateWithType(updateInfo, type);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '选择安装类型:',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      ...updateInfo.availableInstallationTypes.map((type) {
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 2),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(4),
+                              onTap: () {
+                                KazumiDialog.dismiss();
+                                _downloadUpdateWithType(updateInfo, type);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outline
+                                        .withValues(alpha: 0.3),
+                                  ),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.download,
+                                      size: 16,
                                       color: Theme.of(context)
                                           .colorScheme
-                                          .outline
-                                          .withValues(alpha: 0.3),
+                                          .primary,
                                     ),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.download,
-                                        size: 16,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _getInstallationTypeDescription(type),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          _getInstallationTypeDescription(type),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall,
-                                        ),
-                                      ),
-                                      Icon(
-                                        Icons.arrow_forward_ios,
-                                        size: 12,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .outline,
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                    Icon(
+                                      Icons.arrow_forward_ios,
+                                      size: 12,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .outline,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          );
-                        }),
-                      ],
-                    ),
+                          ),
+                        );
+                      }),
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
@@ -341,20 +314,8 @@ class AutoUpdater {
 
   String _getInstallationTypeDescription(InstallationType type) {
     switch (type) {
-      case InstallationType.windowsMsix:
-        return 'Windows MSIX 包';
-      case InstallationType.windowsPortable:
-        return 'Windows 便携版 (ZIP)';
-      case InstallationType.linuxDeb:
-        return 'Linux DEB 包';
-      case InstallationType.linuxTar:
-        return 'Linux TAR 包';
-      case InstallationType.macosDmg:
-        return 'macOS DMG 镜像';
       case InstallationType.androidApk:
         return 'Android APK';
-      case InstallationType.ios:
-        return 'iOS ipa';
       case InstallationType.unknown:
         return '未知安装类型';
     }
@@ -363,17 +324,6 @@ class AutoUpdater {
   Future<void> _downloadUpdateWithType(
       UpdateInfo updateInfo, InstallationType selectedType) async {
     try {
-      if (selectedType == InstallationType.ios ||
-          selectedType == InstallationType.linuxDeb ||
-          selectedType == InstallationType.linuxTar) {
-        String releaseUrl = updateInfo.releaseNotes;
-        if (releaseUrl.isEmpty) {
-          releaseUrl = ApiEndpoints.latestApp;
-        }
-        launchUrl(Uri.parse(releaseUrl), mode: LaunchMode.externalApplication);
-        return;
-      }
-
       final asset = getUpdateAssetForType(updateInfo.assets, selectedType);
       final downloadUrl = getUpdateDownloadUrlFromAsset(asset);
       if (asset == null || downloadUrl.isEmpty) {
@@ -560,19 +510,10 @@ class AutoUpdater {
                 style: TextStyle(color: Theme.of(context).colorScheme.outline),
               ),
             ),
-            if (isDesktop())
-              TextButton(
-                onPressed: () {
-                  KazumiDialog.dismiss(context: context);
-                  _revealInFileManager(filePath);
-                },
-                child: const Text('打开文件夹'),
-              ),
             TextButton(
               onPressed: () {
                 KazumiDialog.dismiss();
-                _installUpdate(
-                    filePath, updateInfo.recommendedInstallationType);
+                _installUpdate(filePath);
               },
               child: const Text('立即安装'),
             ),
@@ -643,80 +584,20 @@ class AutoUpdater {
     return filePath;
   }
 
-  void _installUpdate(
-      String filePath, InstallationType installationType) async {
+  void _installUpdate(String filePath) async {
     try {
       KazumiDialog.showToast(message: '准备安装更新，应用即将退出...');
 
       await Future.delayed(const Duration(seconds: 2));
 
-      if (Platform.isWindows) {
-        if (installationType == InstallationType.windowsMsix) {
-          final Uri fileUri = Uri.file(filePath);
-          if (await canLaunchUrl(fileUri)) {
-            await launchUrl(fileUri);
-          } else {
-            throw 'Could not launch $fileUri';
-          }
-        } else {
-          await Process.start('explorer.exe', [filePath], runInShell: true);
-        }
-        await Future.delayed(const Duration(seconds: 1));
-        exit(0);
-      } else if (Platform.isMacOS) {
-        if (filePath.endsWith('.dmg')) {
-          await Process.start('open', [filePath]);
-          exit(0);
-        }
-      } else if (Platform.isAndroid) {
-        final result = await OpenFilex.open(filePath);
-        if (result.type != ResultType.done) {
-          KazumiDialog.showToast(message: '无法打开安装文件: ${result.message}');
-          return;
-        }
+      final result = await OpenFilex.open(filePath);
+      if (result.type != ResultType.done) {
+        KazumiDialog.showToast(message: '无法打开安装文件: ${result.message}');
+        return;
       }
     } catch (e) {
       KazumiDialog.showToast(message: '启动安装程序失败: ${e.toString()}');
       KazumiLogger().e('Update: launch installer failed', error: e);
-    }
-  }
-
-  void _revealInFileManager(String filePath) async {
-    try {
-      final type = await FileSystemEntity.type(filePath);
-      String targetDirOrFile;
-      if (type == FileSystemEntityType.notFound) {
-        KazumiDialog.showToast(message: '文件或目录不存在');
-        return;
-      } else if (type == FileSystemEntityType.directory) {
-        targetDirOrFile = filePath;
-      } else {
-        targetDirOrFile = File(filePath).parent.path;
-      }
-
-      if (Platform.isWindows) {
-        if (type == FileSystemEntityType.file) {
-          final arg = '/select,${filePath.replaceAll('/', r'\')}';
-          await Process.start('explorer.exe', [arg], runInShell: true);
-        } else {
-          await Process.start(
-              'explorer.exe', [targetDirOrFile.replaceAll('/', r'\')],
-              runInShell: true);
-        }
-      } else if (Platform.isMacOS) {
-        if (type == FileSystemEntityType.file) {
-          await Process.start('open', ['-R', filePath]);
-        } else {
-          await Process.start('open', [targetDirOrFile]);
-        }
-      } else if (Platform.isLinux) {
-        await Process.start('xdg-open', [targetDirOrFile]);
-      } else {
-        KazumiDialog.showToast(message: '此平台不支持通过此方法打开文件管理器');
-      }
-    } catch (e) {
-      KazumiDialog.showToast(message: '无法打开文件管理器');
-      KazumiLogger().w('Update: reveal in file manager failed', error: e);
     }
   }
 
@@ -727,16 +608,6 @@ class AutoUpdater {
     if (fileName.isNotEmpty) {
       return fileName;
     }
-    String extension = '';
-    if (Platform.isWindows) {
-      extension = '.msix';
-    } else if (Platform.isMacOS) {
-      extension = '.dmg';
-    } else if (Platform.isLinux) {
-      extension = '.deb';
-    } else if (Platform.isAndroid) {
-      extension = '.apk';
-    }
-    return 'Kazumi-$version$extension';
+    return 'Kazumi-$version.apk';
   }
 }

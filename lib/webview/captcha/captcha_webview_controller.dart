@@ -1,9 +1,6 @@
-import 'dart:io';
 import 'dart:async';
 
 import 'package:kazumi/webview/captcha/impl/captcha_webview_inappwebview_impl.dart';
-import 'package:kazumi/webview/captcha/impl/captcha_webview_windows_impl.dart';
-import 'package:kazumi/webview/captcha/impl/captcha_webview_linux_impl.dart';
 
 abstract class CaptchaWebviewController<T> {
   /// WebView controller.
@@ -92,13 +89,6 @@ abstract class CaptchaWebviewController<T> {
 
 class CaptchaWebviewControllerFactory {
   static CaptchaWebviewController getController() {
-    if (Platform.isWindows) {
-      return CaptchaWebviewWindowsImpl();
-    }
-    if (Platform.isLinux) {
-      return CaptchaWebviewLinuxImpl();
-    }
-    // Android, iOS, macOS
     return CaptchaWebviewInAppWebviewImpl();
   }
 }

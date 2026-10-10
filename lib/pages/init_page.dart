@@ -15,7 +15,6 @@ import 'package:kazumi/services/shaders/shader_asset_service.dart';
 import 'package:kazumi/pages/download/download_controller.dart';
 import 'package:kazumi/pages/plugin_editor/plugin_update_actions.dart';
 import 'package:kazumi/services/download/background_download_service.dart';
-import 'package:kazumi/services/platform/windows_shortcut.dart';
 import 'package:kazumi/services/platform/platform_environment_service.dart';
 import 'package:kazumi/services/update/startup_update_check.dart';
 import 'package:kazumi/navigation.dart';
@@ -69,8 +68,6 @@ class _InitPageState extends State<InitPage> {
       KazumiLogger().e('InitPage: downloadController.init() failed', error: e);
     }
 
-    await _checkRunningOnX11();
-    await _showShortcutDialog();
     await _pluginInit();
 
     if (!mounted) {
@@ -216,77 +213,6 @@ class _InitPageState extends State<InitPage> {
     }
   }
 
-  Future<void> _checkRunningOnX11() async {
-    if (!Platform.isLinux) {
-      return;
-    }
-    bool isRunningOnX11 = await PlatformEnvironmentService.isRunningOnX11();
-    if (isRunningOnX11) {
-      await KazumiDialog.show(
-        clickMaskDismiss: false,
-        builder: (context) {
-          return PopScope(
-            canPop: false,
-            child: AlertDialog(
-              title: const Text('X11环境检测'),
-              content: const Text(
-                  '检测到您当前运行在X11环境下，Kazumi在X11环境下可能出现性能问题或界面异常，建议切换到Wayland以获得更好的体验。您是否希望在X11下继续使用Kazumi？'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    exit(0);
-                  },
-                  child: Text(
-                    '退出',
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.outline),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    KazumiDialog.dismiss();
-                  },
-                  child: const Text('继续'),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    }
-  }
-
-  Future<void> _showShortcutDialog() async {
-    if (!Platform.isWindows) return;
-    if (GStorage.getSetting(SettingsKeys.shortcutDialogShown)) {
-      return;
-    }
-
-    final create = await KazumiDialog.show<bool>(
-      clickMaskDismiss: false,
-      builder: (context) => AlertDialog(
-        title: const Text('创建桌面快捷方式'),
-        content: const Text('是否在桌面创建 Kazumi 的快捷方式？'),
-        actions: [
-          TextButton(
-            onPressed: () => KazumiDialog.dismiss(popWith: false),
-            child: Text('暂不创建',
-                style: TextStyle(color: Theme.of(context).colorScheme.outline)),
-          ),
-          TextButton(
-            onPressed: () => KazumiDialog.dismiss(popWith: true),
-            child: const Text('创建'),
-          ),
-        ],
-      ),
-    );
-
-    await GStorage.putSetting(SettingsKeys.shortcutDialogShown, true);
-    if (create ?? false) {
-      final success = await WindowsShortcut.createDesktopShortcut();
-      KazumiDialog.showToast(message: success ? '桌面快捷方式已创建' : '桌面快捷方式创建失败');
-    }
-  }
 
   Future<void> _pluginInit() async {
     try {
