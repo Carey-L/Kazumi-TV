@@ -16,6 +16,8 @@ import 'package:kazumi/navigation.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/theme.dart';
+import 'package:kazumi/utils/platform_variant.dart';
+import 'package:kazumi/bean/widget/tv_focus_scope.dart';
 
 class AppWidget extends StatefulWidget {
   const AppWidget({super.key});
@@ -141,7 +143,7 @@ class _AppWidgetState extends State<AppWidget>
     Color? color,
     ColorScheme? colorScheme,
   }) {
-    return ThemeData(
+    final theme = ThemeData(
       useMaterial3: true,
       fontFamily: fontFamily,
       brightness: brightness,
@@ -150,6 +152,14 @@ class _AppWidgetState extends State<AppWidget>
       progressIndicatorTheme: progressIndicatorTheme2024,
       sliderTheme: sliderTheme2024,
       pageTransitionsTheme: pageTransitionsTheme2024,
+    );
+    if (!isTvBuild) return theme;
+
+    return theme.copyWith(
+      focusColor: theme.colorScheme.primary.withValues(alpha: 0.32),
+      hoverColor: theme.colorScheme.primary.withValues(alpha: 0.16),
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      visualDensity: const VisualDensity(horizontal: 1, vertical: 1),
     );
   }
 
@@ -315,6 +325,10 @@ class _AppWidgetState extends State<AppWidget>
           themeMode: themeProvider.themeMode,
           scaffoldMessengerKey: rootScaffoldMessengerKey,
           routerConfig: ModularApp.routerConfigOf(context),
+          builder: (context, child) {
+            final content = child ?? const SizedBox.shrink();
+            return isTvBuild ? TvFocusScope(child: content) : content;
+          },
         );
       },
     );

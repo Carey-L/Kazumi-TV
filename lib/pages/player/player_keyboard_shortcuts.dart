@@ -4,8 +4,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/utils/constants.dart';
+import 'package:kazumi/utils/platform_variant.dart';
 
 typedef PlayerShortcutAction = FutureOr<void> Function();
+
+final Map<LogicalKeyboardKey, String> tvPlayerKeyActions = {
+  LogicalKeyboardKey.enter: 'playorpause',
+  LogicalKeyboardKey.select: 'playorpause',
+  LogicalKeyboardKey.gameButtonA: 'playorpause',
+  LogicalKeyboardKey.mediaPlayPause: 'playorpause',
+  LogicalKeyboardKey.mediaPlay: 'play',
+  LogicalKeyboardKey.mediaPause: 'pause',
+  LogicalKeyboardKey.mediaFastForward: 'forward',
+  LogicalKeyboardKey.mediaSkipForward: 'forward',
+  LogicalKeyboardKey.mediaRewind: 'rewind',
+  LogicalKeyboardKey.mediaSkipBackward: 'rewind',
+  LogicalKeyboardKey.mediaTrackNext: 'next',
+  LogicalKeyboardKey.mediaTrackPrevious: 'prev',
+  LogicalKeyboardKey.audioVolumeUp: 'volumeup',
+  LogicalKeyboardKey.audioVolumeDown: 'volumedown',
+  LogicalKeyboardKey.audioVolumeMute: 'togglemute',
+};
+
+final Set<LogicalKeyboardKey> _tvFocusNavigationKeys = {
+  LogicalKeyboardKey.arrowUp,
+  LogicalKeyboardKey.arrowDown,
+  LogicalKeyboardKey.arrowLeft,
+  LogicalKeyboardKey.arrowRight,
+  LogicalKeyboardKey.enter,
+  LogicalKeyboardKey.select,
+  LogicalKeyboardKey.gameButtonA,
+};
+
+final Set<LogicalKeyboardKey> _tvEnterControlsKeys = {
+  LogicalKeyboardKey.arrowDown,
+};
 
 class PlayerLongPressShortcutActions {
   const PlayerLongPressShortcutActions({
@@ -31,6 +64,7 @@ class PlayerKeyboardShortcuts extends StatefulWidget {
     this.longPressActions = const <String, PlayerLongPressShortcutActions>{},
     this.isBlocked,
     this.shortcuts,
+    this.tvMode = isTvBuild,
   });
 
   final FocusNode focusScopeNode;
@@ -38,6 +72,7 @@ class PlayerKeyboardShortcuts extends StatefulWidget {
   final Map<String, PlayerLongPressShortcutActions> longPressActions;
   final bool Function()? isBlocked;
   final Map<String, List<String>>? shortcuts;
+  final bool tvMode;
 
   @override
   State<PlayerKeyboardShortcuts> createState() =>
@@ -95,10 +130,16 @@ class _PlayerKeyboardShortcutsState extends State<PlayerKeyboardShortcuts> {
       return KeyEventResult.ignored;
     }
 
+    if (_shouldYieldToFocusedControl(event.logicalKey)) {
+      return KeyEventResult.ignored;
+    }
+
     final keyLabel = event.logicalKey.keyLabel.isNotEmpty
         ? event.logicalKey.keyLabel
         : event.logicalKey.debugName ?? '';
-    final actionName = _findActionName(keyLabel);
+    final actionName = widget.tvMode
+        ? tvPlayerKeyActions[event.logicalKey] ?? _findActionName(keyLabel)
+        : _findActionName(keyLabel);
     if (actionName == null) {
       return KeyEventResult.ignored;
     }
@@ -151,6 +192,20 @@ class _PlayerKeyboardShortcutsState extends State<PlayerKeyboardShortcuts> {
     }
     return focusContext.widget is! EditableText &&
         focusContext.findAncestorWidgetOfExactType<EditableText>() == null;
+  }
+
+  bool _shouldYieldToFocusedControl(LogicalKeyboardKey key) {
+    if (!widget.tvMode || !_tvFocusNavigationKeys.contains(key)) {
+      return false;
+    }
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    if (primaryFocus == null) return false;
+    if (primaryFocus != widget.focusScopeNode) return true;
+
+    // Down is the conventional way to reveal and enter TV playback controls.
+    // Left/right remain available for seeking while the video surface itself
+    // owns focus.
+    return _tvEnterControlsKeys.contains(key);
   }
 
   String? _findActionName(String keyLabel) {

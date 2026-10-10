@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
+import 'package:kazumi/bean/widget/tv_focus_highlight.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 
 class BangumiTimelineCard extends StatelessWidget {
@@ -68,7 +69,7 @@ class BangumiTimelineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
+    final card = Semantics(
       button: true,
       child: Card(
         elevation: 0,
@@ -97,6 +98,10 @@ class BangumiTimelineCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+    return TvFocusHighlight(
+      borderRadius: const BorderRadius.all(Radius.circular(_cornerRadius)),
+      child: card,
     );
   }
 

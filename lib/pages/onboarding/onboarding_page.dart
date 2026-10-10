@@ -11,7 +11,6 @@ import 'package:kazumi/pages/my/my_controller.dart';
 import 'package:kazumi/pages/onboarding/steps/disclaimer_step.dart';
 import 'package:kazumi/pages/onboarding/steps/mirror_settings_step.dart';
 import 'package:kazumi/pages/onboarding/steps/plugin_shop_step.dart';
-import 'package:kazumi/pages/onboarding/steps/update_source_step.dart';
 import 'package:kazumi/plugins/plugins.dart' show pluginNameKey;
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
@@ -34,7 +33,6 @@ class OnboardingPage extends StatefulWidget {
 
 enum _OnboardingStep {
   welcome('使用约定'),
-  updates('更新来源'),
   mirrors('访问加速'),
   rules('添加规则');
 
@@ -47,7 +45,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final _pageController = PageController();
   final _steps = [
     _OnboardingStep.welcome,
-    if (Platform.isAndroid) _OnboardingStep.updates,
     _OnboardingStep.mirrors,
     _OnboardingStep.rules,
   ];
@@ -55,17 +52,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
   bool _agreed = false;
   bool _installingBundled = false;
   bool _busy = false;
-  late bool _useGithubUpdate;
   late Set<String> _initialPluginNames;
 
   PluginsController get _pluginsController => widget.pluginsController;
   bool get _isLastStep => _currentIndex == _steps.length - 1;
-
-  @override
-  void initState() {
-    super.initState();
-    _useGithubUpdate = GStorage.getSetting(SettingsKeys.autoUpdate);
-  }
 
   @override
   void dispose() {
@@ -75,13 +65,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Widget _buildStep(_OnboardingStep step) => switch (step) {
         _OnboardingStep.welcome => const DisclaimerStep(),
-        _OnboardingStep.updates => UpdateSourceStep(
-            useGithubUpdate: _useGithubUpdate,
-            onChanged: (value) {
-              setState(() => _useGithubUpdate = value);
-              unawaited(GStorage.putSetting(SettingsKeys.autoUpdate, value));
-            },
-          ),
         _OnboardingStep.mirrors => const MirrorSettingsStep(),
         _OnboardingStep.rules => PluginShopStep(controller: _pluginsController),
       };

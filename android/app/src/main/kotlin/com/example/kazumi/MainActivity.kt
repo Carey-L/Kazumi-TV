@@ -115,6 +115,8 @@ class MainActivity: AudioServiceActivity() {
             } else if (call.method == "getAndroidSdkVersion") {
                 val sdkVersion = getAndroidSdkVersion()
                 result.success(sdkVersion)
+            } else if (call.method == "isAndroidEmulator") {
+                result.success(isAndroidEmulator())
             } else if (call.method == "setSystemBarsHidden") {
                 systemBarsHidden = call.arguments as? Boolean ?: false
                 applySystemBarsState()
@@ -178,6 +180,20 @@ class MainActivity: AudioServiceActivity() {
 
     private fun getAndroidSdkVersion(): Int {
         return Build.VERSION.SDK_INT
+    }
+
+    private fun isAndroidEmulator(): Boolean {
+        return Build.FINGERPRINT.startsWith("generic") ||
+            Build.FINGERPRINT.startsWith("unknown") ||
+            Build.MODEL.contains("google_sdk", ignoreCase = true) ||
+            Build.MODEL.contains("Emulator", ignoreCase = true) ||
+            Build.MODEL.contains("Android SDK built for", ignoreCase = true) ||
+            Build.MANUFACTURER.contains("Genymotion", ignoreCase = true) ||
+            (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic")) ||
+            Build.PRODUCT.contains("sdk_gphone", ignoreCase = true) ||
+            Build.PRODUCT.contains("sdk_google", ignoreCase = true) ||
+            Build.PRODUCT.contains("emulator", ignoreCase = true) ||
+            Build.PRODUCT.contains("simulator", ignoreCase = true)
     }
 
     // System bars belong to the full size window; replayed on leaving PiP.

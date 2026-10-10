@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 160dp x 90dp renders as the required 320px x 180px TV banner at xhdpi. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:width="160dp"
+        android:height="90dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="0"
+                android:endColor="#FF185A3A"
+                android:startColor="#FF0B281B" />
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+    <item
+        android:width="72dp"
+        android:height="72dp"
+        android:gravity="center">
+        <bitmap
+            android:antialias="true"
+            android:filter="true"
+            android:gravity="fill"
+            android:src="@drawable/ic_launcher_foreground" />
+    </item>
+</layer-list>

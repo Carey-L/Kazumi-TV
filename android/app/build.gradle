@@ -60,6 +60,18 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
+    flavorDimensions "device"
+    productFlavors {
+        mobile {
+            dimension "device"
+        }
+        tv {
+            dimension "device"
+            applicationIdSuffix ".tv"
+            versionNameSuffix "-tv"
+        }
+    }
 }
 
 flutter {

@@ -21,9 +21,16 @@ import 'package:kazumi/services/platform/desktop_window_config.dart';
 import 'package:kazumi/services/platform/webview_feature_service.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/navigation.dart';
+import 'package:kazumi/utils/platform_variant.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (isTvBuild) {
+    // A remote is a traditional focus device. Always showing focus avoids the
+    // first D-pad interaction looking unresponsive on a television.
+    FocusManager.instance.highlightStrategy =
+        FocusHighlightStrategy.alwaysTraditional;
+  }
   registerEchHttpLicenses();
   MediaKit.ensureInitialized();
   if (Platform.isAndroid || Platform.isIOS) {

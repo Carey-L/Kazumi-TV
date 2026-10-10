@@ -13,6 +13,7 @@ import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/network/proxy_utils.dart';
 import 'package:kazumi/services/network/system_proxy_service.dart';
 import 'package:kazumi/services/player/playback_cache_policy.dart';
+import 'package:kazumi/services/player/android_video_renderer_policy.dart';
 import 'package:kazumi/services/player/player_error_mapper.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/video_source/video_source_format.dart';
@@ -381,19 +382,28 @@ abstract class _PlayerPlaybackController with Store {
         final String androidVideoRenderer =
             GStorage.getSetting(SettingsKeys.androidVideoRenderer);
 
-        if (androidVideoRenderer == 'auto') {
-          // Android 14 及以上使用基于 Vulkan 的 MPV GPU-NEXT 视频输出，着色器性能更好
-          // GPU-NEXT 需要 Vulkan 1.2 支持
-          // 避免 Android 13 及以下设备上部分机型 Vulkan 支持不佳导致的黑屏问题
+        if (androidVideoRenderer == 'auto' ||
+            androidVideoRenderer == 'gpu-next') {
           final int androidSdkVersion =
               await PlatformEnvironmentService.getAndroidSdkVersion();
           if (!isCurrentPlayer(player)) {
             return await _discardIfNotCurrent(candidate);
           }
-          if (androidSdkVersion >= 34) {
-            videoRenderer = 'gpu-next';
-          } else {
-            videoRenderer = 'gpu';
+          final bool isAndroidEmulator =
+              await PlatformEnvironmentService.isAndroidEmulator();
+          if (!isCurrentPlayer(player)) {
+            return await _discardIfNotCurrent(candidate);
+          }
+          videoRenderer = resolveAndroidVideoRenderer(
+            configuredRenderer: androidVideoRenderer,
+            androidSdkVersion: androidSdkVersion,
+            isEmulator: isAndroidEmulator,
+          );
+          if (isAndroidEmulator && androidVideoRenderer == 'gpu-next') {
+            KazumiLogger().w(
+              'Player: Android emulator does not safely support the Vulkan '
+              'gpu-next renderer; falling back to OpenGL gpu',
+            );
           }
         } else {
           videoRenderer = androidVideoRenderer;

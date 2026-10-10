@@ -6,6 +6,7 @@ import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
 import 'package:kazumi/navigation.dart';
 import 'package:kazumi/pages/menu/route_visibility.dart';
 import 'package:kazumi/pages/router.dart';
+import 'package:kazumi/utils/platform_variant.dart';
 
 class ScaffoldMenu extends StatefulWidget {
   const ScaffoldMenu({super.key, required this.location});
@@ -182,6 +183,7 @@ class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
               backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
               groupAlignment: 1,
               leading: FloatingActionButton(
+                autofocus: isTvBuild,
                 elevation: 0,
                 heroTag: null,
                 onPressed: () => context.pushNamed('/search/'),

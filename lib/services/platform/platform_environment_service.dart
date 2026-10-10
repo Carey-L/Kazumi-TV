@@ -31,4 +31,17 @@ class PlatformEnvironmentService {
       return 0;
     }
   }
+
+  static Future<bool> isAndroidEmulator() async {
+    if (!Platform.isAndroid) {
+      return false;
+    }
+    try {
+      return await _intentChannel.invokeMethod<bool>('isAndroidEmulator') ??
+          false;
+    } on PlatformException catch (e) {
+      KazumiLogger().e("Failed to detect Android emulator: '${e.message}'.");
+      return false;
+    }
+  }
 }

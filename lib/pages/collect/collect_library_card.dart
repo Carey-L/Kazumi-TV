@@ -178,9 +178,10 @@ class _CollectPosterCard extends StatelessWidget {
               ),
             );
 
-      return Material(
+      final borderRadius = BorderRadius.circular(compact ? 16 : 20);
+      final card = Material(
         color: colors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(compact ? 16 : 20),
+        borderRadius: borderRadius,
         clipBehavior: Clip.antiAlias,
         child: Semantics(
           button: true,
@@ -207,6 +208,7 @@ class _CollectPosterCard extends StatelessWidget {
           ),
         ),
       );
+      return TvFocusHighlight(borderRadius: borderRadius, child: card);
     });
   }
 }
@@ -238,9 +240,10 @@ class _CollectListTile extends StatelessWidget {
         '${item.ratingScore.toStringAsFixed(1)} 分',
     ];
 
-    return Material(
+    final borderRadius = BorderRadius.circular(24);
+    final card = Material(
       color: colors.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: borderRadius,
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
@@ -325,6 +328,7 @@ class _CollectListTile extends StatelessWidget {
         ],
       ),
     );
+    return TvFocusHighlight(borderRadius: borderRadius, child: card);
   }
 }
 
