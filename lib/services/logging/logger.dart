@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:logger/logger.dart';
@@ -113,7 +114,7 @@ class KazumiLogOutput extends LogOutput {
   @override
   void output(OutputEvent event) {
     for (var line in event.lines) {
-      print(line);
+      developer.log(line, name: 'Kazumi');
     }
 
     // Write to file if: warning/error/fatal OR forceLog is enabled
@@ -140,7 +141,10 @@ class KazumiLogOutput extends LogOutput {
           mode: FileMode.writeOnlyAppend,
         );
       } catch (e) {
-        print('Failed to write log to file: ${_singleLineLogText(e)}');
+        developer.log(
+          'Failed to write log to file: ${_singleLineLogText(e)}',
+          name: 'Kazumi',
+        );
       }
     });
   }
@@ -247,7 +251,10 @@ Future<bool> clearLogs() async {
     });
     return true;
   } catch (e) {
-    print('Error clearing file: ${_singleLineLogText(e)}');
+    developer.log(
+      'Error clearing file: ${_singleLineLogText(e)}',
+      name: 'Kazumi',
+    );
     return false;
   }
 }

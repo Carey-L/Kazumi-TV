@@ -54,7 +54,7 @@ Future<void> showDanmakuSourceSheet(
     transitionDuration: MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : SidePanelTransition.duration,
-    transitionBuilder: (_, animation, __, child) => Align(
+    transitionBuilder: (_, animation, _, child) => Align(
       alignment: Alignment.centerRight,
       child: SidePanelTransition(animation: animation, child: child),
     ),
@@ -476,7 +476,7 @@ class _DanmakuSourceSheetState extends State<_DanmakuSourceSheet> {
             shrinkWrap: true,
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
             itemCount: _animes.length,
-            separatorBuilder: (_, __) =>
+            separatorBuilder: (_, _) =>
                 const SizedBox(height: splitListRowGap),
             itemBuilder: (context, index) {
               final anime = _animes[index];

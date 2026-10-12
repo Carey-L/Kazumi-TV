@@ -5,11 +5,9 @@ import 'package:canvas_danmaku/models/danmaku_content_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:mobx/mobx.dart' as mobx;
 
 import 'package:kazumi/bean/appbar/drag_to_move_bar.dart' as dtb;
 import 'package:kazumi/bean/dialog/adaptive_bottom_sheet.dart';
-import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/bean/widget/media_error_widget.dart';
@@ -205,12 +203,6 @@ class _VideoPageState extends State<VideoPage> {
     keyboardFocus.dispose();
     TimedShutdownService().cancel();
     super.dispose();
-  }
-
-  void _toggleDebugConsole() {
-    setState(() {
-      showDebugLog = !showDebugLog;
-    });
   }
 
   /// Back closes transient windows first. During normal playback it then

@@ -242,7 +242,7 @@ abstract class _VideoPageController with Store implements Disposable {
     final preferredDisplayRoad =
         _offlineOriginalRoadToDisplayRoad[preferredOriginalRoad];
     final roadIndices = <int>[
-      if (preferredDisplayRoad != null) preferredDisplayRoad,
+      preferredDisplayRoad?,
       for (var i = 0; i < roadList.length; i++)
         if (i != preferredDisplayRoad) i,
     ];

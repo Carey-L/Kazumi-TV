@@ -18,12 +18,10 @@ import 'package:kazumi/pages/video/video_controller.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
 import 'package:flutter/services.dart';
-import 'package:kazumi/services/player/remote.dart';
 import 'package:kazumi/bean/appbar/drag_to_move_bar.dart' as dtb;
 import 'package:kazumi/pages/settings/danmaku/danmaku_settings_sheet.dart';
 import 'package:kazumi/utils/constants.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-import 'package:kazumi/services/player/timed_shutdown_service.dart';
 import 'package:kazumi/utils/format.dart';
 import 'package:kazumi/pages/player/player_transport_bar.dart';
 import 'package:kazumi/pages/player/player_screenshot_controls.dart';
@@ -280,45 +278,6 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
     );
   }
 
-  void _showForwardChange() {
-    KazumiDialog.show(
-      builder: (context) {
-        var input = '';
-        return AlertDialog(
-          title: const Text('跳过秒数'),
-          content: TextField(
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              floatingLabelBehavior: FloatingLabelBehavior.never,
-              labelText: playerController.playback.buttonSkipTime.toString(),
-            ),
-            onChanged: (value) {
-              input = value;
-            },
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => KazumiDialog.dismiss(),
-              child: Text(
-                '取消',
-                style: TextStyle(color: Theme.of(context).colorScheme.outline),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                if (input.isNotEmpty) {
-                  playerController.setButtonForwardTime(int.parse(input));
-                }
-                KazumiDialog.dismiss();
-              },
-              child: const Text('确定'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   void initState() {
     super.initState();
@@ -411,23 +370,6 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
           tooltip: danmakuLoading ? '弹幕加载中...' : (danmakuOn ? '关闭弹幕' : '打开弹幕'),
         );
       },
-    );
-  }
-
-  Widget _forwardButton() {
-    return Tooltip(
-      message: '快进${playerController.playback.buttonSkipTime}秒，长按修改时间',
-      child: GestureDetector(
-        onLongPress: _showForwardChange,
-        child: IconButton(
-          icon: Image.asset(
-            'assets/images/forward_80.png',
-            color: Colors.white,
-            height: 24,
-          ),
-          onPressed: widget.skipOP,
-        ),
-      ),
     );
   }
 
@@ -685,9 +627,6 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
 
   Widget get _syncPlayMenuItem =>
       KazumiMenuItem(onPressed: widget.showSyncPlayPanel, label: '一起看');
-
-  Widget get _danmakuSettingsMenuItem =>
-      KazumiMenuItem(onPressed: _showDanmakuSettings, label: '弹幕设置');
 
   Widget get _wideControls => Row(
     children: [

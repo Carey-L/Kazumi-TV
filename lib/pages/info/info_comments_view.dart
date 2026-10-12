@@ -100,7 +100,7 @@ class InfoCommentsView extends StatelessWidget {
                             comments[index - (ownComment == null ? 0 : 1)],
                       );
                     },
-                    separatorBuilder: (_, __) => const Divider(
+                    separatorBuilder: (_, _) => const Divider(
                       thickness: 0.5,
                       indent: 10,
                       endIndent: 10,
@@ -138,7 +138,7 @@ class InfoCommentsView extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: gutter),
                   sliver: SliverList.builder(
                     itemCount: 4,
-                    itemBuilder: (_, __) => const Padding(
+                    itemBuilder: (_, _) => const Padding(
                       padding: EdgeInsets.symmetric(vertical: 16),
                       child: CommentsCard.bone(),
                     ),

@@ -141,7 +141,7 @@ class _SyncPlaySheetScaffold extends StatelessWidget {
                       child: const Text('取消'),
                     ),
                   const Spacer(),
-                  if (primaryAction != null) primaryAction!,
+                  primaryAction?,
                 ],
               ),
             )

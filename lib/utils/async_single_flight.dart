@@ -14,7 +14,7 @@ class AsyncSingleFlight<T> {
     _active = future;
     future.then<void>(
       (_) => _clear(future),
-      onError: (Object _, StackTrace __) => _clear(future),
+      onError: (Object _, StackTrace _) => _clear(future),
     );
     return future;
   }

@@ -66,7 +66,7 @@ class _TimelinePageState extends State<TimelinePage> {
             child: ListView.separated(
               padding: materialBottomSheetContentPadding,
               itemCount: years.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 24),
+              separatorBuilder: (_, _) => const SizedBox(height: 24),
               itemBuilder: (context, index) {
                 final year = years[index];
                 return ContentSection(

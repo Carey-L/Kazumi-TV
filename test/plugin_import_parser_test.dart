@@ -209,7 +209,7 @@ void main() {
     test('batch update rolls back all rules when persistence fails', () async {
       final controller = PluginsController(
         pluginJsonWriter: (_) async => throw StateError('write failed'),
-        errorReporter: (_, __, ___) {},
+        errorReporter: (_, _, _) {},
       );
       controller.pluginList.add(plugin('installed'));
 
