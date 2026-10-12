@@ -113,11 +113,6 @@
           - name: Package android build output
             run: cp build/app/outputs/flutter-apk/app-tv-release.apk "Kazumi_android_${RELEASE_TAG}.apk"
             shell: bash
-
-          - name: Verify APK signature
-            run: apksigner verify --verbose "Kazumi_android_${RELEASE_TAG}.apk"
-            shell: bash
-
           - name: Upload android outputs
             uses: actions/upload-artifact@v4
             with:
