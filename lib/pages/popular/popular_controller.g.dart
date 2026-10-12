@@ -9,8 +9,10 @@ part of 'popular_controller.dart';
 // ignore_for_file: non_constant_identifier_names, unnecessary_brace_in_string_interps, unnecessary_lambdas, prefer_expression_function_bodies, lines_longer_than_80_chars, avoid_as, avoid_annotating_with_dynamic, no_leading_underscores_for_local_identifiers
 
 mixin _$PopularController on _PopularController, Store {
-  late final _$currentTagAtom =
-      Atom(name: '_PopularController.currentTag', context: context);
+  late final _$currentTagAtom = Atom(
+    name: '_PopularController.currentTag',
+    context: context,
+  );
 
   @override
   String get currentTag {
@@ -25,8 +27,10 @@ mixin _$PopularController on _PopularController, Store {
     });
   }
 
-  late final _$bangumiListAtom =
-      Atom(name: '_PopularController.bangumiList', context: context);
+  late final _$bangumiListAtom = Atom(
+    name: '_PopularController.bangumiList',
+    context: context,
+  );
 
   @override
   ObservableList<BangumiItem> get bangumiList {
@@ -41,8 +45,10 @@ mixin _$PopularController on _PopularController, Store {
     });
   }
 
-  late final _$trendListAtom =
-      Atom(name: '_PopularController.trendList', context: context);
+  late final _$trendListAtom = Atom(
+    name: '_PopularController.trendList',
+    context: context,
+  );
 
   @override
   ObservableList<BangumiItem> get trendList {
@@ -57,8 +63,10 @@ mixin _$PopularController on _PopularController, Store {
     });
   }
 
-  late final _$isLoadingMoreAtom =
-      Atom(name: '_PopularController.isLoadingMore', context: context);
+  late final _$isLoadingMoreAtom = Atom(
+    name: '_PopularController.isLoadingMore',
+    context: context,
+  );
 
   @override
   bool get isLoadingMore {
@@ -73,8 +81,10 @@ mixin _$PopularController on _PopularController, Store {
     });
   }
 
-  late final _$isTimeOutAtom =
-      Atom(name: '_PopularController.isTimeOut', context: context);
+  late final _$isTimeOutAtom = Atom(
+    name: '_PopularController.isTimeOut',
+    context: context,
+  );
 
   @override
   bool get isTimeOut {
@@ -89,22 +99,28 @@ mixin _$PopularController on _PopularController, Store {
     });
   }
 
-  late final _$queryBangumiByTrendAsyncAction =
-      AsyncAction('_PopularController.queryBangumiByTrend', context: context);
+  late final _$queryBangumiByTrendAsyncAction = AsyncAction(
+    '_PopularController.queryBangumiByTrend',
+    context: context,
+  );
 
   @override
   Future<void> queryBangumiByTrend({String type = 'add'}) {
-    return _$queryBangumiByTrendAsyncAction
-        .run(() => super.queryBangumiByTrend(type: type));
+    return _$queryBangumiByTrendAsyncAction.run(
+      () => super.queryBangumiByTrend(type: type),
+    );
   }
 
-  late final _$queryBangumiByTagAsyncAction =
-      AsyncAction('_PopularController.queryBangumiByTag', context: context);
+  late final _$queryBangumiByTagAsyncAction = AsyncAction(
+    '_PopularController.queryBangumiByTag',
+    context: context,
+  );
 
   @override
   Future<void> queryBangumiByTag({String type = 'add'}) {
-    return _$queryBangumiByTagAsyncAction
-        .run(() => super.queryBangumiByTag(type: type));
+    return _$queryBangumiByTagAsyncAction.run(
+      () => super.queryBangumiByTag(type: type),
+    );
   }
 
   @override

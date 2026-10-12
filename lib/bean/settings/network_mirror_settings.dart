@@ -133,7 +133,7 @@ extension on BangumiAcceleration {
   String get description => switch (this) {
     BangumiAcceleration.direct => '访问官方接口',
     BangumiAcceleration.ech => '启用加密握手',
-    BangumiAcceleration.mirror => '镜像接口（默认）',
+    BangumiAcceleration.mirror => '使用 Kazumi 镜像接口',
   };
 }
 

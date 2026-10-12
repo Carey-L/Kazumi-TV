@@ -268,10 +268,11 @@ class SettingsKeys {
     'ech',
     group: SettingGroup.proxy,
   );
-  // An unset mode inherits the old mirror switch (enabled by default).
+  // ECH is the default: it keeps requests on Bangumi's public API without
+  // relying on Kazumi's mirror service or its private credentials.
   static const bangumiAcceleration = SettingKey<String>(
     'bangumiAcceleration',
-    '',
+    'ech',
     group: SettingGroup.proxy,
   );
   static const enableSystemProxy = SettingKey<bool>(
@@ -522,11 +523,6 @@ class SettingsKeys {
     true,
     group: SettingGroup.bangumi,
   );
-  static const brightnessVolumeGesture = SettingKey<bool>(
-    _SettingBoxKey.brightnessVolumeGesture,
-    true,
-    group: SettingGroup.player,
-  );
   static const historySyncDeviceId = SettingKey<String>(
     _SettingBoxKey.historySyncDeviceId,
     '',
@@ -654,7 +650,6 @@ class SettingsKeys {
     bangumiAccessToken,
     bangumiSyncPriority,
     bangumiImmediateSyncToastEnable,
-    brightnessVolumeGesture,
     historySyncDeviceId,
     historySyncSequence,
     historySyncSnapshotInitialized,
@@ -666,7 +661,7 @@ class SettingsKeys {
   static List<SettingKey<Object?>> byGroup(SettingGroup group) {
     return [
       for (final key in all)
-        if (key.group == group) key
+        if (key.group == group) key,
     ];
   }
 
@@ -761,7 +756,6 @@ class _SettingBoxKey {
       bangumiAccessToken = 'bangumiAccessToken',
       bangumiSyncPriority = 'bangumiSyncPriority',
       bangumiImmediateSyncToastEnable = 'bangumiImmediateSyncToastEnable',
-      brightnessVolumeGesture = 'brightnessVolumeGesture',
       historySyncDeviceId = 'historySyncDeviceId',
       historySyncSequence = 'historySyncSequence',
       historySyncSnapshotInitialized = 'historySyncSnapshotInitialized';

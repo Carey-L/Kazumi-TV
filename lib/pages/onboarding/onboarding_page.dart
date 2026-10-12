@@ -8,7 +8,6 @@ import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/pages/my/my_controller.dart';
-import 'package:kazumi/pages/onboarding/steps/disclaimer_step.dart';
 import 'package:kazumi/pages/onboarding/steps/mirror_settings_step.dart';
 import 'package:kazumi/pages/onboarding/steps/plugin_shop_step.dart';
 import 'package:kazumi/plugins/plugins.dart' show pluginNameKey;
@@ -32,7 +31,6 @@ class OnboardingPage extends StatefulWidget {
 }
 
 enum _OnboardingStep {
-  welcome('使用约定'),
   mirrors('访问加速'),
   rules('添加规则');
 
@@ -44,12 +42,11 @@ enum _OnboardingStep {
 class _OnboardingPageState extends State<OnboardingPage> {
   final _pageController = PageController();
   final _steps = [
-    _OnboardingStep.welcome,
     _OnboardingStep.mirrors,
     _OnboardingStep.rules,
   ];
   int _currentIndex = 0;
-  bool _agreed = false;
+  bool _canBrowseSteps = false;
   bool _installingBundled = false;
   bool _busy = false;
   late Set<String> _initialPluginNames;
@@ -64,22 +61,18 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Widget _buildStep(_OnboardingStep step) => switch (step) {
-        _OnboardingStep.welcome => const DisclaimerStep(),
         _OnboardingStep.mirrors => const MirrorSettingsStep(),
         _OnboardingStep.rules => PluginShopStep(controller: _pluginsController),
       };
 
-  String get _primaryLabel => !_agreed
-      ? '同意并继续'
-      : _isLastStep
-          ? '开始使用'
-          : '继续';
+  String get _primaryLabel =>
+      _isLastStep ? '开始使用' : '继续';
 
   Future<void> _navigate({required bool forward}) async {
     if (_busy || (!forward && _currentIndex == 0)) return;
     _busy = true;
     try {
-      if (forward && !_agreed && !await _installBundledRules()) return;
+      if (forward && !_canBrowseSteps && !await _installBundledRules()) return;
       if (!mounted) return;
       if (forward && _isLastStep) {
         await _finish();
@@ -124,7 +117,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
         .map((plugin) => pluginNameKey(plugin.name))
         .toSet();
     setState(() {
-      _agreed = true;
+      _canBrowseSteps = true;
       _installingBundled = false;
     });
     return true;
@@ -227,7 +220,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       Expanded(
                         child: PageView(
                           controller: _pageController,
-                          physics: _agreed
+                          physics: _canBrowseSteps
                               ? null
                               : const NeverScrollableScrollPhysics(),
                           onPageChanged: (index) {

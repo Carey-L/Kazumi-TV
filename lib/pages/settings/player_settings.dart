@@ -11,7 +11,6 @@ import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/player/pip_utils.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
-import 'package:kazumi/utils/device.dart';
 
 class PlayerSettingsPage extends StatefulWidget {
   const PlayerSettingsPage({super.key});
@@ -39,7 +38,6 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
   late bool forceAdBlocker;
   late bool autoPlayNext;
   late bool backgroundPlayback;
-  late bool brightnessVolumeGesture;
   late int playerButtonSkipTime;
   late int playerArrowKeySkipTime;
   late int playerLogLevel;
@@ -75,9 +73,6 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
         GStorage.getSetting<bool>(SettingsKeys.playerDisableAnimations);
     forceAdBlocker = GStorage.getSetting<bool>(SettingsKeys.forceAdBlocker);
     playerLogLevel = GStorage.getSetting<int>(SettingsKeys.playerLogLevel);
-
-    brightnessVolumeGesture =
-        GStorage.getSetting<bool>(SettingsKeys.brightnessVolumeGesture);
 
     playerButtonSkipTime =
         GStorage.getSetting<int>(SettingsKeys.buttonSkipTime);
@@ -381,20 +376,6 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                 description: Text('禁用播放器内的过渡动画'),
                 initialValue: playerDisableAnimations,
               ),
-              if (!isDesktop())
-                SettingsTile.switchTile(
-                  leading: Icons.swipe_vertical_rounded,
-                  onToggle: (value) async {
-                    brightnessVolumeGesture = value ?? !brightnessVolumeGesture;
-                    await GStorage.putSetting<bool>(
-                        SettingsKeys.brightnessVolumeGesture,
-                        brightnessVolumeGesture);
-                    setState(() {});
-                  },
-                  title: Text('滑动手势'),
-                  description: Text('竖向滑动调节音量和亮度'),
-                  initialValue: brightnessVolumeGesture,
-                ),
               SettingsTile.switchTile(
                 leading: Icons.visibility_off_rounded,
                 onToggle: (value) async {

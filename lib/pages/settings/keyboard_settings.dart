@@ -17,7 +17,6 @@ class _ShortcutGroup {
 const List<_ShortcutGroup> _shortcutGroups = [
   _ShortcutGroup(
       '播放控制', ['playorpause', 'forward', 'rewind', 'skip', 'next', 'prev']),
-  _ShortcutGroup('音量', ['volumeup', 'volumedown', 'togglemute']),
   _ShortcutGroup(
       '画面与弹幕', ['fullscreen', 'exitfullscreen', 'screenshot', 'toggledanmaku']),
   _ShortcutGroup('倍速', ['speed1', 'speed2', 'speed3', 'speedup', 'speeddown']),

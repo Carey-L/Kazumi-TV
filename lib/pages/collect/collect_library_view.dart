@@ -158,6 +158,10 @@ class _CollectLibraryViewState extends State<CollectLibraryView>
       child: Focus(
         focusNode: _libraryFocus,
         autofocus: true,
+        // This node spans the whole library, so leaving it traversable would
+        // let directional traversal park on it instead of reaching a card.
+        // Skip traversal only: search still focuses it explicitly.
+        skipTraversal: true,
         child: LayoutBuilder(builder: (context, constraints) {
           final compact = constraints.maxWidth < 600;
           final paged = mobile &&

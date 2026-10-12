@@ -9,8 +9,10 @@ part of 'info_controller.dart';
 // ignore_for_file: non_constant_identifier_names, unnecessary_brace_in_string_interps, unnecessary_lambdas, prefer_expression_function_bodies, lines_longer_than_80_chars, avoid_as, avoid_annotating_with_dynamic, no_leading_underscores_for_local_identifiers
 
 mixin _$InfoController on _InfoController, Store {
-  late final _$isLoadingAtom =
-      Atom(name: '_InfoController.isLoading', context: context);
+  late final _$isLoadingAtom = Atom(
+    name: '_InfoController.isLoading',
+    context: context,
+  );
 
   @override
   bool get isLoading {
@@ -25,8 +27,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$pluginSearchResponseListAtom =
-      Atom(name: '_InfoController.pluginSearchResponseList', context: context);
+  late final _$pluginSearchResponseListAtom = Atom(
+    name: '_InfoController.pluginSearchResponseList',
+    context: context,
+  );
 
   @override
   ObservableList<PluginSearchResponse> get pluginSearchResponseList {
@@ -36,14 +40,19 @@ mixin _$InfoController on _InfoController, Store {
 
   @override
   set pluginSearchResponseList(ObservableList<PluginSearchResponse> value) {
-    _$pluginSearchResponseListAtom
-        .reportWrite(value, super.pluginSearchResponseList, () {
-      super.pluginSearchResponseList = value;
-    });
+    _$pluginSearchResponseListAtom.reportWrite(
+      value,
+      super.pluginSearchResponseList,
+      () {
+        super.pluginSearchResponseList = value;
+      },
+    );
   }
 
-  late final _$pluginSearchStatusAtom =
-      Atom(name: '_InfoController.pluginSearchStatus', context: context);
+  late final _$pluginSearchStatusAtom = Atom(
+    name: '_InfoController.pluginSearchStatus',
+    context: context,
+  );
 
   @override
   ObservableMap<String, PluginSearchStatus> get pluginSearchStatus {
@@ -58,8 +67,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$commentsListAtom =
-      Atom(name: '_InfoController.commentsList', context: context);
+  late final _$commentsListAtom = Atom(
+    name: '_InfoController.commentsList',
+    context: context,
+  );
 
   @override
   ObservableList<CommentItem> get commentsList {
@@ -74,8 +85,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$characterListAtom =
-      Atom(name: '_InfoController.characterList', context: context);
+  late final _$characterListAtom = Atom(
+    name: '_InfoController.characterList',
+    context: context,
+  );
 
   @override
   ObservableList<CharacterItem> get characterList {
@@ -90,8 +103,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$staffListAtom =
-      Atom(name: '_InfoController.staffList', context: context);
+  late final _$staffListAtom = Atom(
+    name: '_InfoController.staffList',
+    context: context,
+  );
 
   @override
   ObservableList<StaffFullItem> get staffList {
@@ -106,8 +121,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$relationListAtom =
-      Atom(name: '_InfoController.relationList', context: context);
+  late final _$relationListAtom = Atom(
+    name: '_InfoController.relationList',
+    context: context,
+  );
 
   @override
   ObservableList<BangumiRelation> get relationList {
@@ -122,8 +139,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$relationsIsLoadingAtom =
-      Atom(name: '_InfoController.relationsIsLoading', context: context);
+  late final _$relationsIsLoadingAtom = Atom(
+    name: '_InfoController.relationsIsLoading',
+    context: context,
+  );
 
   @override
   bool get relationsIsLoading {
@@ -138,8 +157,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$relationsQueryTimeoutAtom =
-      Atom(name: '_InfoController.relationsQueryTimeout', context: context);
+  late final _$relationsQueryTimeoutAtom = Atom(
+    name: '_InfoController.relationsQueryTimeout',
+    context: context,
+  );
 
   @override
   bool get relationsQueryTimeout {
@@ -149,14 +170,19 @@ mixin _$InfoController on _InfoController, Store {
 
   @override
   set relationsQueryTimeout(bool value) {
-    _$relationsQueryTimeoutAtom.reportWrite(value, super.relationsQueryTimeout,
-        () {
-      super.relationsQueryTimeout = value;
-    });
+    _$relationsQueryTimeoutAtom.reportWrite(
+      value,
+      super.relationsQueryTimeout,
+      () {
+        super.relationsQueryTimeout = value;
+      },
+    );
   }
 
-  late final _$relationsHasLoadedAtom =
-      Atom(name: '_InfoController.relationsHasLoaded', context: context);
+  late final _$relationsHasLoadedAtom = Atom(
+    name: '_InfoController.relationsHasLoaded',
+    context: context,
+  );
 
   @override
   bool get relationsHasLoaded {
@@ -172,22 +198,27 @@ mixin _$InfoController on _InfoController, Store {
   }
 
   late final _$queryBangumiRelationsByIDAsyncAction = AsyncAction(
-      '_InfoController.queryBangumiRelationsByID',
-      context: context);
+    '_InfoController.queryBangumiRelationsByID',
+    context: context,
+  );
 
   @override
   Future<void> queryBangumiRelationsByID(int id) {
-    return _$queryBangumiRelationsByIDAsyncAction
-        .run(() => super.queryBangumiRelationsByID(id));
+    return _$queryBangumiRelationsByIDAsyncAction.run(
+      () => super.queryBangumiRelationsByID(id),
+    );
   }
 
-  late final _$_InfoControllerActionController =
-      ActionController(name: '_InfoController', context: context);
+  late final _$_InfoControllerActionController = ActionController(
+    name: '_InfoController',
+    context: context,
+  );
 
   @override
   void clearRelations() {
     final _$actionInfo = _$_InfoControllerActionController.startAction(
-        name: '_InfoController.clearRelations');
+      name: '_InfoController.clearRelations',
+    );
     try {
       return super.clearRelations();
     } finally {

@@ -51,7 +51,6 @@ class _TvFocusHighlightState extends State<TvFocusHighlight> {
   Widget build(BuildContext context) {
     if (!widget.enabled) return widget.child;
 
-    final primary = Theme.of(context).colorScheme.primary;
     return Focus(
       canRequestFocus: false,
       skipTraversal: true,
@@ -68,8 +67,8 @@ class _TvFocusHighlightState extends State<TvFocusHighlight> {
             decoration: BoxDecoration(
               borderRadius: widget.borderRadius,
               border: Border.all(
-                color: primary.withValues(alpha: progress),
-                width: 3,
+                color: Colors.white.withValues(alpha: progress),
+                width: 4,
               ),
             ),
             child: child,

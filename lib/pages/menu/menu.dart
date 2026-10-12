@@ -7,6 +7,8 @@ import 'package:kazumi/navigation.dart';
 import 'package:kazumi/pages/menu/route_visibility.dart';
 import 'package:kazumi/pages/router.dart';
 import 'package:kazumi/utils/platform_variant.dart';
+import 'package:kazumi/bean/widget/tv_traversal_scope.dart';
+import 'package:kazumi/bean/widget/kazumi_menu.dart';
 
 class ScaffoldMenu extends StatefulWidget {
   const ScaffoldMenu({super.key, required this.location});
@@ -19,6 +21,11 @@ class ScaffoldMenu extends StatefulWidget {
 
 class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
   final _outletKey = GlobalKey<RouterOutletState>();
+  final FocusNode _railFocus = FocusNode(debugLabel: 'MenuRail');
+  final FocusNode _railEntryFocus = FocusNode(debugLabel: 'MenuRailEntry');
+  final FocusNode _contentFocus = FocusNode(debugLabel: 'MenuContent');
+  final TvTraversalScopeController _contentTraversal =
+      TvTraversalScopeController();
   late int _selectedIndex = menu.indexForPath(widget.location);
   DateTime? _lastExitPromptAt;
 
@@ -46,6 +53,9 @@ class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
   @override
   void dispose() {
     rootRouteObserver.unsubscribe(this);
+    _railFocus.dispose();
+    _railEntryFocus.dispose();
+    _contentFocus.dispose();
     super.dispose();
   }
 
@@ -74,6 +84,11 @@ class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
   }
 
   void _handleSystemBack(BuildContext context) {
+    if (dismissAllOpenMenus()) {
+      _lastExitPromptAt = null;
+      return;
+    }
+
     if (_outletKey.currentState?.maybePop() ?? false) {
       _lastExitPromptAt = null;
       return;
@@ -95,6 +110,60 @@ class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
 
     _lastExitPromptAt = null;
     SystemNavigator.pop();
+  }
+
+  /// Moves focus off the rail and into the content pane. Traversal cannot do
+  /// this on its own: the rail lives in the shell scope while the content sits
+  /// in the outlet's nested scope.
+  KeyEventResult _handleRailKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey != LogicalKeyboardKey.arrowRight) {
+      return KeyEventResult.ignored;
+    }
+    final moved = _focusContentPane();
+    return moved ? KeyEventResult.handled : KeyEventResult.ignored;
+  }
+
+  /// Focuses the left-most traversable control in the content pane.
+  bool _focusContentPane() =>
+      _contentTraversal.focusFirstInDirection(TraversalDirection.right);
+
+  /// Traverses within the pane first, then returns to the rail at its left
+  /// edge. A nested Navigator can otherwise consume the edge and never expose
+  /// the shell's navigation controls.
+  KeyEventResult _handleContentKey(KeyEvent event) {
+    if (event is! KeyDownEvent ||
+        event.logicalKey != LogicalKeyboardKey.arrowLeft) {
+      return KeyEventResult.ignored;
+    }
+    final primary = FocusManager.instance.primaryFocus;
+    if (primary == null || !primary.ancestors.contains(_contentFocus)) {
+      return KeyEventResult.ignored;
+    }
+    // Nested app-bar controls (for example the recommendation category
+    // selector) can report a successful left traversal by looping inside their
+    // own scope. Detect the pane's actual left edge before delegating so that
+    // the D-pad always returns to the navigation rail from its first column.
+    if (!_hasFocusableNodeToLeftOf(primary)) {
+      _railEntryFocus.requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (primary.focusInDirection(TraversalDirection.left)) {
+      return KeyEventResult.handled;
+    }
+    _railEntryFocus.requestFocus();
+    return KeyEventResult.handled;
+  }
+
+  bool _hasFocusableNodeToLeftOf(FocusNode primary) {
+    final primaryRect = primary.rect;
+    return _contentFocus.traversalDescendants.any(
+      (node) =>
+          node is! FocusScopeNode &&
+          node != primary &&
+          node.context != null &&
+          node.rect.center.dx < primaryRect.center.dx,
+    );
   }
 
   @override
@@ -123,7 +192,12 @@ class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
     Widget child = NotificationListener<NavigationNotification>(
       // A non-poppable outlet must not override the shell's PopScope state.
       onNotification: (notification) => !notification.canHandlePop,
-      child: RouterOutlet(key: _outletKey),
+      // The outlet nests its own Navigator, whose focus scope would otherwise
+      // trap the D-pad away from the side rail.
+      child: TvTraversalScope(
+        controller: _contentTraversal,
+        child: RouterOutlet(key: _outletKey),
+      ),
     );
     if (borderRadius != null) {
       child = ClipRRect(borderRadius: borderRadius, child: child);
@@ -178,45 +252,64 @@ class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
       backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
       body: Row(
         children: [
-          EmbeddedNativeControlArea(
-            child: NavigationRail(
-              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-              groupAlignment: 1,
-              leading: FloatingActionButton(
-                autofocus: isTvBuild,
-                elevation: 0,
-                heroTag: null,
-                onPressed: () => context.pushNamed('/search/'),
-                child: const Icon(Icons.search),
+          Focus(
+            focusNode: _railFocus,
+            // Pure key-event interceptor: it must not take focus itself or sit
+            // in the traversal order between the rail's own destinations.
+            canRequestFocus: false,
+            skipTraversal: true,
+            onKeyEvent: (node, event) => _handleRailKey(event),
+            child: EmbeddedNativeControlArea(
+              child: NavigationRail(
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                groupAlignment: 1,
+                leading: FloatingActionButton(
+                  focusNode: _railEntryFocus,
+                  autofocus: isTvBuild,
+                  elevation: 0,
+                  heroTag: null,
+                  onPressed: () => context.pushNamed('/search/'),
+                  child: const Icon(Icons.search),
+                ),
+                labelType: NavigationRailLabelType.selected,
+                destinations: const <NavigationRailDestination>[
+                  NavigationRailDestination(
+                    selectedIcon: Icon(Icons.home),
+                    icon: Icon(Icons.home_outlined),
+                    label: Text('推荐'),
+                  ),
+                  NavigationRailDestination(
+                    selectedIcon: Icon(Icons.timeline),
+                    icon: Icon(Icons.timeline_outlined),
+                    label: Text('时间表'),
+                  ),
+                  NavigationRailDestination(
+                    selectedIcon: Icon(Icons.favorite),
+                    icon: Icon(Icons.favorite_border),
+                    label: Text('追番'),
+                  ),
+                  NavigationRailDestination(
+                    selectedIcon: Icon(Icons.settings),
+                    icon: Icon(Icons.settings_outlined),
+                    label: Text('我的'),
+                  ),
+                ],
+                selectedIndex: selectedIndex,
+                onDestinationSelected: _selectDestination,
               ),
-              labelType: NavigationRailLabelType.selected,
-              destinations: const <NavigationRailDestination>[
-                NavigationRailDestination(
-                  selectedIcon: Icon(Icons.home),
-                  icon: Icon(Icons.home_outlined),
-                  label: Text('推荐'),
-                ),
-                NavigationRailDestination(
-                  selectedIcon: Icon(Icons.timeline),
-                  icon: Icon(Icons.timeline_outlined),
-                  label: Text('时间表'),
-                ),
-                NavigationRailDestination(
-                  selectedIcon: Icon(Icons.favorite),
-                  icon: Icon(Icons.favorite_border),
-                  label: Text('追番'),
-                ),
-                NavigationRailDestination(
-                  selectedIcon: Icon(Icons.settings),
-                  icon: Icon(Icons.settings_outlined),
-                  label: Text('我的'),
-                ),
-              ],
-              selectedIndex: selectedIndex,
-              onDestinationSelected: _selectDestination,
             ),
           ),
-          Expanded(child: _outlet(context, borderRadius: borderRadius)),
+          Expanded(
+            child: Focus(
+              focusNode: _contentFocus,
+              // This is an event boundary only; child controls remain in the
+              // traversal order and retain their own focus.
+              canRequestFocus: false,
+              skipTraversal: true,
+              onKeyEvent: (node, event) => _handleContentKey(event),
+              child: _outlet(context, borderRadius: borderRadius),
+            ),
+          ),
         ],
       ),
     );

@@ -3,23 +3,23 @@ import 'dart:async';
 
 import 'package:canvas_danmaku/models/danmaku_content_item.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:mobx/mobx.dart' as mobx;
-import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 
 import 'package:kazumi/bean/appbar/drag_to_move_bar.dart' as dtb;
 import 'package:kazumi/bean/dialog/adaptive_bottom_sheet.dart';
+import 'package:kazumi/bean/dialog/dialog_helper.dart';
+import 'package:kazumi/bean/widget/kazumi_menu.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/bean/widget/media_error_widget.dart';
 import 'package:kazumi/modules/download/download_module.dart';
 import 'package:kazumi/pages/download/download_controller.dart';
 import 'package:kazumi/pages/download/download_episode_sheet.dart';
 import 'package:kazumi/pages/history/history_controller.dart';
-import 'package:kazumi/pages/player/episode_comments_sheet.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
 import 'package:kazumi/pages/player/player_item.dart';
 import 'package:kazumi/pages/video/episode_selection_panel.dart';
-import 'package:kazumi/pages/video/player_content_tabs.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
 import 'package:kazumi/pages/video/video_playback_args.dart';
 import 'package:kazumi/pages/video/video_page_layout.dart';
@@ -48,12 +48,13 @@ class VideoPage extends StatefulWidget {
   State<VideoPage> createState() => _VideoPageState();
 }
 
-class _VideoPageState extends State<VideoPage>
-    with SingleTickerProviderStateMixin {
+class _VideoPageState extends State<VideoPage> {
   PlayerController get playerController => widget.playerController;
   VideoPageController get videoPageController => widget.videoPageController;
   bool _didInitializePlayback = false;
   bool _isExiting = false;
+  DateTime? _lastBackHandledAt;
+  static const _backDebounceDuration = Duration(milliseconds: 600);
   HistoryController get historyController => widget.historyController;
   DownloadController get downloadController => widget.downloadController;
   late bool playResume;
@@ -66,8 +67,7 @@ class _VideoPageState extends State<VideoPage>
 
   final _episodePanelKey = GlobalKey<EpisodeSelectionPanelState>();
   final _sidePanelKey = GlobalKey<VideoSidePanelState>();
-  late TabController tabController;
-
+  final playerItemKey = GlobalKey<PlayerItemState>();
   late final bool disableAnimations;
 
   StreamSubscription<SyncPlayChatMessage>? _syncChatSubscription;
@@ -78,8 +78,6 @@ class _VideoPageState extends State<VideoPage>
   void initState() {
     super.initState();
     videoPageController.applyPlaybackArgs(widget.args);
-
-    tabController = TabController(length: 2, vsync: this);
 
     playResume = GStorage.getSetting(SettingsKeys.playResume);
     disableAnimations = GStorage.getSetting(
@@ -203,12 +201,8 @@ class _VideoPageState extends State<VideoPage>
     try {
       _logSubscription?.cancel();
     } catch (_) {}
-    try {
-      ScreenBrightnessPlatform.instance.resetApplicationScreenBrightness();
-    } catch (_) {}
     unawaited(videoPageController.fullscreen.close());
     keyboardFocus.dispose();
-    tabController.dispose();
     TimedShutdownService().cancel();
     super.dispose();
   }
@@ -217,6 +211,56 @@ class _VideoPageState extends State<VideoPage>
     setState(() {
       showDebugLog = !showDebugLog;
     });
+  }
+
+  /// Back closes transient windows first. During normal playback it then
+  /// hides the control panel; loading and error states leave immediately.
+  /// The debounce prevents one remote press being delivered through both key
+  /// routes.
+  Future<void> _handleSystemBack() async {
+    final now = DateTime.now();
+    if (_isExiting ||
+        (_lastBackHandledAt != null &&
+            now.difference(_lastBackHandledAt!) < _backDebounceDuration)) {
+      return;
+    }
+    _lastBackHandledAt = now;
+
+    // Menus live in an overlay, so they must be closed before the route pop.
+    if (dismissAllOpenMenus()) return;
+
+    // The episode panel is a persistent overlay rather than a route. Close it
+    // before changing the player panel or leaving playback.
+    if (_sidePanelKey.currentState?.isOpen ?? false) {
+      _closeSidePanel();
+      return;
+    }
+
+    if (playerController.playback.playing &&
+        playerController.panel.showVideoController) {
+      playerItemKey.currentState?.hideVideoController(force: true);
+      return;
+    }
+
+    // The player route belongs to the modular outlet, not necessarily to the
+    // application's root navigator. Popping the root navigator left an error
+    // page stranded when video parsing had failed.
+    final navigator = Navigator.of(context);
+    if (!navigator.canPop()) return;
+    setState(() => _isExiting = true);
+    playerController.beginShutdown();
+    navigator.pop();
+  }
+
+  KeyEventResult _handlePageKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.goBack ||
+        event.logicalKey == LogicalKeyboardKey.browserBack ||
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      unawaited(_handleSystemBack());
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   Future<void> changeEpisode(
@@ -249,9 +293,7 @@ class _VideoPageState extends State<VideoPage>
 
   void _closeSidePanel() => _sidePanelKey.currentState?.close();
 
-  void _onBackPressed() {
-    unawaited(Navigator.of(context).maybePop());
-  }
+  void _onBackPressed() => unawaited(_handleSystemBack());
 
   void pauseForTimedShutdown() {
     if (playerController.playback.playing) {
@@ -262,11 +304,12 @@ class _VideoPageState extends State<VideoPage>
   @override
   Widget build(BuildContext context) {
     return PopScope(
+      // Back is handled explicitly: it first dismisses transient UI and only
+      // then asks before leaving the player.
+      canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? result) {
-        if (didPop) {
-          setState(() => _isExiting = true);
-          playerController.beginShutdown();
-        }
+        if (didPop) return;
+        _handleSystemBack();
       },
       child: Observer(
         builder: (context) {
@@ -283,19 +326,21 @@ class _VideoPageState extends State<VideoPage>
                   child: Focus(
                     focusNode: keyboardFocus,
                     autofocus: true,
+                    onKeyEvent: _handlePageKeyEvent,
                     // Cleanup resets loading while the route is still visible.
                     child: _isExiting
                         ? const SizedBox.expand()
                         : Observer(builder: (_) => _buildPlayerBody(layout)),
                   ),
                 ),
-                tabs: tabBody,
+                tabs: null,
                 sidePanel: VideoSidePanel(
                   key: _sidePanelKey,
                   fullscreen: videoPageController.isFullscreen,
                   disableAnimations: disableAnimations,
                   onOpened: _revealCurrentEpisode,
-                  onClosed: keyboardFocus.requestFocus,
+                  onClosed: () =>
+                      playerItemKey.currentState?.focusProgressBar(),
                   child: tabBody,
                 ),
               ),
@@ -308,6 +353,11 @@ class _VideoPageState extends State<VideoPage>
 
   Widget _buildPlayerBody(VideoPlayerLayout layout) {
     final bool playerLoading = playerController.playback.loading;
+    final bool showTopControls =
+        playerController.playback.playing &&
+        !videoPageController.loading &&
+        !playerLoading &&
+        videoPageController.errorMessage == null;
     return Stack(
       children: [
         Positioned.fill(
@@ -372,64 +422,56 @@ class _VideoPageState extends State<VideoPage>
                   ),
                 ),
               ),
-              Stack(
-                children: [
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: EmbeddedNativeControlArea(
-                      requireOffset: !videoPageController.isFullscreen,
-                      child: Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: Colors.white,
-                            ),
-                            onPressed: _onBackPressed,
-                          ),
-                          const Expanded(
-                            child: dtb.DragToMoveArea(
-                              child: SizedBox(height: 40),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.refresh_outlined,
-                              color: Colors.white,
-                            ),
-                            onPressed: () {
-                              changeEpisode(
-                                videoPageController.selectedEpisode.episode,
-                                currentRoad:
-                                    videoPageController.selectedEpisode.road,
-                              );
-                            },
-                          ),
-                          if (layout.hasSidePanel)
+              if (showTopControls)
+                Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: EmbeddedNativeControlArea(
+                        requireOffset: !videoPageController.isFullscreen,
+                        child: Row(
+                          children: [
                             IconButton(
-                              onPressed: _toggleSidePanel,
                               icon: const Icon(
-                                Icons.menu_open_rounded,
+                                Icons.arrow_back,
                                 color: Colors.white,
                               ),
+                              onPressed: _onBackPressed,
                             ),
-                          IconButton(
-                            icon: Icon(
-                              showDebugLog
-                                  ? Icons.bug_report
-                                  : Icons.bug_report_outlined,
-                              color: Colors.white,
+                            const Expanded(
+                              child: dtb.DragToMoveArea(
+                                child: SizedBox(height: 40),
+                              ),
                             ),
-                            onPressed: _toggleDebugConsole,
-                          ),
-                        ],
+                            IconButton(
+                              icon: const Icon(
+                                Icons.refresh_outlined,
+                                color: Colors.white,
+                              ),
+                              onPressed: () {
+                                changeEpisode(
+                                  videoPageController.selectedEpisode.episode,
+                                  currentRoad:
+                                      videoPageController.selectedEpisode.road,
+                                );
+                              },
+                            ),
+                            if (layout.hasSidePanel)
+                              IconButton(
+                                onPressed: _toggleSidePanel,
+                                icon: const Icon(
+                                  Icons.menu_open_rounded,
+                                  color: Colors.white,
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -437,6 +479,7 @@ class _VideoPageState extends State<VideoPage>
           child: playerLoading
               ? const SizedBox.shrink()
               : PlayerItem(
+                  key: playerItemKey,
                   fillsWindow: layout.fillsWindow,
                   playerController: playerController,
                   videoPageController: videoPageController,
@@ -446,6 +489,8 @@ class _VideoPageState extends State<VideoPage>
                   changeEpisode: changeEpisode,
                   onBackPressed: _onBackPressed,
                   keyboardFocus: keyboardFocus,
+                  isPlayerInputBlocked: () =>
+                      _sidePanelKey.currentState?.isOpen ?? false,
                   disableAnimations: disableAnimations,
                   pauseForTimedShutdown: pauseForTimedShutdown,
                 ),
@@ -512,32 +557,6 @@ class _VideoPageState extends State<VideoPage>
 
   Widget get tabBody {
     final colors = Theme.of(context).colorScheme;
-    final int episodeNum = videoPageController.commentsEpisode;
-
-    return ColoredBox(
-      color: colors.surface,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          PlayerContentTabs(
-            controller: tabController,
-            onEpisodesSelected: _revealCurrentEpisode,
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: tabController,
-              children: [
-                episodePanel,
-                EpisodeCommentsSheet(
-                  episode: episodeNum,
-                  selection: videoPageController.selectedEpisode,
-                  videoPageController: videoPageController,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return ColoredBox(color: colors.surface, child: episodePanel);
   }
 }

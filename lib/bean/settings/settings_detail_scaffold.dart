@@ -80,11 +80,14 @@ class SettingsDetailScaffold extends StatelessWidget {
     }
 
     // Keep routed panes opaque during transitions.
-    return Scaffold(
-      appBar: appBar,
-      body: body,
-      floatingActionButton: floatingActionButton,
-      bottomNavigationBar: bottomNavigationBar,
+    return FocusTraversalGroup(
+      policy: ReadingOrderTraversalPolicy(),
+      child: Scaffold(
+        appBar: appBar,
+        body: body,
+        floatingActionButton: floatingActionButton,
+        bottomNavigationBar: bottomNavigationBar,
+      ),
     );
   }
 }

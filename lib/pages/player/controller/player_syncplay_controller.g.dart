@@ -10,7 +10,9 @@ part of 'player_syncplay_controller.dart';
 
 mixin _$PlayerSyncPlayController on _PlayerSyncPlayController, Store {
   late final _$syncplayControllerAtom = Atom(
-      name: '_PlayerSyncPlayController.syncplayController', context: context);
+    name: '_PlayerSyncPlayController.syncplayController',
+    context: context,
+  );
 
   @override
   SyncplayClient? get syncplayController {
@@ -25,8 +27,10 @@ mixin _$PlayerSyncPlayController on _PlayerSyncPlayController, Store {
     });
   }
 
-  late final _$syncplayRoomAtom =
-      Atom(name: '_PlayerSyncPlayController.syncplayRoom', context: context);
+  late final _$syncplayRoomAtom = Atom(
+    name: '_PlayerSyncPlayController.syncplayRoom',
+    context: context,
+  );
 
   @override
   String get syncplayRoom {
@@ -42,7 +46,9 @@ mixin _$PlayerSyncPlayController on _PlayerSyncPlayController, Store {
   }
 
   late final _$syncplayClientRttAtom = Atom(
-      name: '_PlayerSyncPlayController.syncplayClientRtt', context: context);
+    name: '_PlayerSyncPlayController.syncplayClientRtt',
+    context: context,
+  );
 
   @override
   int get syncplayClientRtt {
@@ -57,8 +63,10 @@ mixin _$PlayerSyncPlayController on _PlayerSyncPlayController, Store {
     });
   }
 
-  late final _$exitRoomAsyncAction =
-      AsyncAction('_PlayerSyncPlayController.exitRoom', context: context);
+  late final _$exitRoomAsyncAction = AsyncAction(
+    '_PlayerSyncPlayController.exitRoom',
+    context: context,
+  );
 
   @override
   Future<void> exitRoom() {

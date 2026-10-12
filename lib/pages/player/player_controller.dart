@@ -26,6 +26,12 @@ import 'package:kazumi/utils/device.dart';
 export 'package:kazumi/pages/player/controller/player_models.dart';
 
 class PlayerController implements Disposable {
+  // Routes are disposed asynchronously so the Back action stays responsive.
+  // A new route must nevertheless wait for the previous native player to let
+  // go of its Android surface/audio resources before creating another one.
+  static Future<void> _previousShutdown = Future<void>.value();
+  static const _previousShutdownWait = Duration(seconds: 3);
+
   PlayerController(
     this.shaderAssetService,
     DownloadController downloadController,
@@ -73,9 +79,9 @@ class PlayerController implements Disposable {
   );
   late final ExternalPlaybackLauncher externalPlayback =
       ExternalPlaybackLauncher(
-    videoUrl: () => videoUrl,
-    referer: () => referer,
-  );
+        videoUrl: () => videoUrl,
+        referer: () => referer,
+      );
 
   late int bangumiId;
   late int currentEpisode;
@@ -85,9 +91,6 @@ class PlayerController implements Disposable {
   String? coverUrl;
   String videoUrl = '';
   bool isLocalPlayback = false;
-  Timer? hideVolumeUITimer;
-  Timer? _volumeGestureSyncTimer;
-  double? _pendingGestureVolume;
 
   bool muted = false;
   double _preMuteVolume = 100;
@@ -120,34 +123,6 @@ class PlayerController implements Disposable {
     }
   }
 
-  void setVolumeDuringGesture(double value) {
-    _pendingGestureVolume = value.clamp(0.0, 100.0);
-    playback.updateVolume(_pendingGestureVolume!);
-    _volumeGestureSyncTimer?.cancel();
-    _volumeGestureSyncTimer = Timer(const Duration(milliseconds: 80), () {
-      final vol = _pendingGestureVolume;
-      if (vol == null) {
-        return;
-      }
-      unawaited(playback.syncVolumeToDevice(vol));
-    });
-  }
-
-  Future<void> finishVolumeGesture() async {
-    _volumeGestureSyncTimer?.cancel();
-    _volumeGestureSyncTimer = null;
-    final vol = _pendingGestureVolume;
-    _pendingGestureVolume = null;
-    if (vol != null) {
-      playback.volume = vol;
-    }
-    playback.invalidatePreciseVolume();
-    await playback.syncVolumeToDevice(vol);
-    final resolved = vol ?? playback.volume;
-    _clearMuteIfNeeded(resolved);
-    _persistDesktopVolume(resolved);
-  }
-
   void _persistDesktopVolume(double value) {
     if (!isDesktop()) {
       return;
@@ -164,6 +139,17 @@ class PlayerController implements Disposable {
   }
 
   Future<bool> init(PlaybackInitParams params) async {
+    final previousShutdown = _previousShutdown;
+    try {
+      await previousShutdown.timeout(_previousShutdownWait);
+    } on TimeoutException {
+      // Do not strand the new route forever if a platform plugin stops
+      // responding during disposal. This remains visible in the app log.
+      KazumiLogger().w(
+        'PlayerController: previous player shutdown timed out; '
+        'continuing initialization',
+      );
+    }
     if (_initializations.isClosed) {
       return false;
     }
@@ -178,7 +164,8 @@ class PlayerController implements Disposable {
     referer = params.referer;
 
     KazumiLogger().i(
-        'PlayerController: ${params.isLocalPlayback ? "local" : "online"} playback, url: ${params.videoUrl}');
+      'PlayerController: ${params.isLocalPlayback ? "local" : "online"} playback, url: ${params.videoUrl}',
+    );
 
     playback.resetForInit();
     debug.playerLogLevel = GStorage.getSetting(SettingsKeys.playerLogLevel);
@@ -188,8 +175,9 @@ class PlayerController implements Disposable {
     );
 
     playback.buttonSkipTime = GStorage.getSetting(SettingsKeys.buttonSkipTime);
-    playback.arrowKeySkipTime =
-        GStorage.getSetting(SettingsKeys.arrowKeySkipTime);
+    playback.arrowKeySkipTime = GStorage.getSetting(
+      SettingsKeys.arrowKeySkipTime,
+    );
     try {
       await _releasePlaybackResources();
     } catch (_) {}
@@ -211,8 +199,10 @@ class PlayerController implements Disposable {
         return false;
       }
       playback.loading = false;
-      KazumiLogger()
-          .e('PlayerController: failed to initialize video', error: e);
+      KazumiLogger().e(
+        'PlayerController: failed to initialize video',
+        error: e,
+      );
       return false;
     }
     if (player == null || !_ownsInitialization(initialization, player)) {
@@ -245,23 +235,17 @@ class PlayerController implements Disposable {
         return false;
       }
 
-      FlutterVolumeController.addListener((volume) {
-        if (player == null || !_ownsInitialization(initialization, player)) {
-          return;
-        }
-        if (panel.volumeSeeking) {
-          return;
-        }
-        playback.applyExternalVolume(volume * 100);
-        if (!Platform.isAndroid && !panel.volumeSeeking) {
-          panel.showVolume = true;
-          hideVolumeUITimer?.cancel();
-          hideVolumeUITimer = Timer(const Duration(seconds: 1), () {
-            panel.showVolume = false;
-            hideVolumeUITimer = null;
-          });
-        }
-      }, category: AudioSessionCategory.playback, emitOnStart: false);
+      // TV/remote hardware owns volume; only follow the system level here.
+      FlutterVolumeController.addListener(
+        (volume) {
+          if (player == null || !_ownsInitialization(initialization, player)) {
+            return;
+          }
+          playback.applyExternalVolume(volume * 100);
+        },
+        category: AudioSessionCategory.playback,
+        emitOnStart: false,
+      );
       if (!_ownsInitialization(initialization, player)) {
         return false;
       }
@@ -279,7 +263,9 @@ class PlayerController implements Disposable {
       if (syncplay.syncplayController!.currentFileName !=
           "$bangumiId[$currentEpisode]") {
         setSyncPlayPlayingBangumi(
-            forceSyncPlaying: true, forceSyncPosition: 0.0);
+          forceSyncPlaying: true,
+          forceSyncPosition: 0.0,
+        );
       }
     }
     return true;
@@ -290,10 +276,7 @@ class PlayerController implements Disposable {
   }
 
   Future<void> setShader(SuperResolutionMode mode, {Player? player}) async {
-    await playback.setShader(
-      mode,
-      player: player,
-    );
+    await playback.setShader(mode, player: player);
   }
 
   Future<void> setPlaybackSpeed(double playerSpeed) async {
@@ -389,28 +372,25 @@ class PlayerController implements Disposable {
     }
     screenshots.dispose();
     final shutdown = _shutdownResources();
-    _shutdownFuture = shutdown;
-    unawaited(
-      shutdown.catchError((Object error, StackTrace stackTrace) {
-        KazumiLogger().e(
-          'PlayerController: failed to dispose asynchronously',
-          error: error,
-          stackTrace: stackTrace,
-        );
-      }),
-    );
+    final guardedShutdown = shutdown.catchError((
+      Object error,
+      StackTrace stackTrace,
+    ) {
+      KazumiLogger().e(
+        'PlayerController: failed to dispose asynchronously',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    });
+    _shutdownFuture = guardedShutdown;
+    _previousShutdown = guardedShutdown;
   }
 
   Future<void> _shutdownResources() async {
-    await Future.wait([
-      _releasePlaybackResources(),
-      syncplay.dispose(),
-    ]);
+    await Future.wait([_releasePlaybackResources(), syncplay.dispose()]);
   }
 
   Future<void> _releasePlaybackResources() async {
-    hideVolumeUITimer?.cancel();
-    _volumeGestureSyncTimer?.cancel();
     FlutterVolumeController.removeListener();
     await Future.wait([
       audioController.deactivate(),
@@ -453,27 +433,28 @@ class PlayerController implements Disposable {
   }
 
   Future<void> createSyncPlayRoom(
-      String room,
-      String username,
-      Future<void> Function(int episode, {int currentRoad, int offset})
-          changeEpisode) async {
-    await syncplay.createRoom(
-      room,
-      username,
-      changeEpisode,
-    );
+    String room,
+    String username,
+    Future<void> Function(int episode, {int currentRoad, int offset})
+    changeEpisode,
+  ) async {
+    await syncplay.createRoom(room, username, changeEpisode);
   }
 
-  void setSyncPlayCurrentPosition(
-      {bool? forceSyncPlaying, double? forceSyncPosition}) {
+  void setSyncPlayCurrentPosition({
+    bool? forceSyncPlaying,
+    double? forceSyncPosition,
+  }) {
     syncplay.setCurrentPosition(
       forceSyncPlaying: forceSyncPlaying,
       forceSyncPosition: forceSyncPosition,
     );
   }
 
-  Future<void> setSyncPlayPlayingBangumi(
-      {bool? forceSyncPlaying, double? forceSyncPosition}) async {
+  Future<void> setSyncPlayPlayingBangumi({
+    bool? forceSyncPlaying,
+    double? forceSyncPosition,
+  }) async {
     await syncplay.setPlayingBangumi(
       forceSyncPlaying: forceSyncPlaying,
       forceSyncPosition: forceSyncPosition,

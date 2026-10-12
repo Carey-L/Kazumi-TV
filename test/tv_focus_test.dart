@@ -56,9 +56,9 @@ void main() {
     expect(playPauseCalls, 1);
   });
 
-  testWidgets('TV player yields down to enter playback controls',
+  testWidgets('TV player shows the control panel on down while the surface owns focus',
       (tester) async {
-    var volumeCalls = 0;
+    var showPanelCalls = 0;
     final playerFocus = FocusNode();
     addTearDown(playerFocus.dispose);
 
@@ -71,7 +71,7 @@ void main() {
             focusScopeNode: playerFocus,
             tvMode: true,
             actions: {
-              'volumedown': () => volumeCalls++,
+              'showpanel': () => showPanelCalls++,
             },
           ),
         ),
@@ -80,7 +80,7 @@ void main() {
     await tester.pump();
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    expect(volumeCalls, 0);
+    expect(showPanelCalls, 1);
   });
 
   testWidgets('TV player yields D-pad keys to a focused child control',

@@ -13,10 +13,6 @@ abstract class _PlayerPanelController with Store {
   @observable
   PlayerAspectRatio aspectRatioMode = PlayerAspectRatio.automatic;
 
-  // 视频亮度
-  @observable
-  double brightness = 0;
-
   // 播放器界面控制
   @observable
   bool lockPanel = false;
@@ -27,15 +23,7 @@ abstract class _PlayerPanelController with Store {
   @observable
   bool seekCancelPending = false;
   @observable
-  bool showBrightness = false;
-  @observable
-  bool showVolume = false;
-  @observable
   bool showPlaySpeed = false;
-  @observable
-  bool brightnessSeeking = false;
-  @observable
-  bool volumeSeeking = false;
   int seekDirection = 0;
   @observable
   bool canHidePlayerPanel = true;
@@ -46,11 +34,7 @@ abstract class _PlayerPanelController with Store {
     showVideoController = true;
     showSeekTime = false;
     seekCancelPending = false;
-    showBrightness = false;
-    showVolume = false;
     showPlaySpeed = false;
-    brightnessSeeking = false;
-    volumeSeeking = false;
     seekDirection = 0;
     canHidePlayerPanel = true;
   }

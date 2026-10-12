@@ -21,9 +21,14 @@ final Map<LogicalKeyboardKey, String> tvPlayerKeyActions = {
   LogicalKeyboardKey.mediaSkipBackward: 'rewind',
   LogicalKeyboardKey.mediaTrackNext: 'next',
   LogicalKeyboardKey.mediaTrackPrevious: 'prev',
-  LogicalKeyboardKey.audioVolumeUp: 'volumeup',
-  LogicalKeyboardKey.audioVolumeDown: 'volumedown',
-  LogicalKeyboardKey.audioVolumeMute: 'togglemute',
+  // Down reveals the control panel while the video surface owns focus. Once a
+  // control holds focus the D-pad is handed back to traversal instead.
+  LogicalKeyboardKey.arrowDown: 'showpanel',
+  LogicalKeyboardKey.arrowLeft: 'rewind',
+  LogicalKeyboardKey.arrowRight: 'forward',
+  LogicalKeyboardKey.goBack: 'back',
+  LogicalKeyboardKey.browserBack: 'back',
+  LogicalKeyboardKey.escape: 'back',
 };
 
 final Set<LogicalKeyboardKey> _tvFocusNavigationKeys = {
@@ -34,10 +39,6 @@ final Set<LogicalKeyboardKey> _tvFocusNavigationKeys = {
   LogicalKeyboardKey.enter,
   LogicalKeyboardKey.select,
   LogicalKeyboardKey.gameButtonA,
-};
-
-final Set<LogicalKeyboardKey> _tvEnterControlsKeys = {
-  LogicalKeyboardKey.arrowDown,
 };
 
 class PlayerLongPressShortcutActions {
@@ -63,6 +64,7 @@ class PlayerKeyboardShortcuts extends StatefulWidget {
     required this.actions,
     this.longPressActions = const <String, PlayerLongPressShortcutActions>{},
     this.isBlocked,
+    this.shouldHandleTvKey,
     this.shortcuts,
     this.tvMode = isTvBuild,
   });
@@ -71,6 +73,8 @@ class PlayerKeyboardShortcuts extends StatefulWidget {
   final Map<String, PlayerShortcutAction> actions;
   final Map<String, PlayerLongPressShortcutActions> longPressActions;
   final bool Function()? isBlocked;
+  final bool Function(LogicalKeyboardKey key, FocusNode focusedNode)?
+  shouldHandleTvKey;
   final Map<String, List<String>>? shortcuts;
   final bool tvMode;
 
@@ -82,8 +86,7 @@ class PlayerKeyboardShortcuts extends StatefulWidget {
 class _PlayerKeyboardShortcutsState extends State<PlayerKeyboardShortcuts> {
   late Map<String, List<String>> _shortcuts;
   final Map<LogicalKeyboardKey, PlayerLongPressShortcutActions>
-      _activeLongPressKeys =
-      <LogicalKeyboardKey, PlayerLongPressShortcutActions>{};
+  _activeLongPressKeys = <LogicalKeyboardKey, PlayerLongPressShortcutActions>{};
 
   @override
   void initState() {
@@ -200,12 +203,11 @@ class _PlayerKeyboardShortcutsState extends State<PlayerKeyboardShortcuts> {
     }
     final primaryFocus = FocusManager.instance.primaryFocus;
     if (primaryFocus == null) return false;
-    if (primaryFocus != widget.focusScopeNode) return true;
+    if (primaryFocus != widget.focusScopeNode) {
+      return !(widget.shouldHandleTvKey?.call(key, primaryFocus) ?? false);
+    }
 
-    // Down is the conventional way to reveal and enter TV playback controls.
-    // Left/right remain available for seeking while the video surface itself
-    // owns focus.
-    return _tvEnterControlsKeys.contains(key);
+    return false;
   }
 
   String? _findActionName(String keyLabel) {

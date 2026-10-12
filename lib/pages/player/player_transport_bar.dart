@@ -26,6 +26,7 @@ class PlayerTransportBar extends StatelessWidget {
     required this.timePlacement,
     required this.controls,
     required this.fullscreen,
+    this.trailing,
   });
 
   final bool compact;
@@ -37,6 +38,9 @@ class PlayerTransportBar extends StatelessWidget {
   final Widget controls;
   final Widget fullscreen;
 
+  /// Rendered at the far right of the button row, after [fullscreen].
+  final Widget? trailing;
+
   @override
   Widget build(BuildContext context) => compact
       ? Row(children: [
@@ -44,6 +48,7 @@ class PlayerTransportBar extends StatelessWidget {
           Expanded(child: progressBuilder(TimeLabelLocation.none)),
           timeLabel,
           fullscreen,
+          if (trailing != null) trailing!,
         ])
       : Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,6 +79,7 @@ class PlayerTransportBar extends StatelessWidget {
                         child: timeLabel),
                   Expanded(child: controls),
                   fullscreen,
+                  if (trailing != null) trailing!,
                 ])),
             if (timePlacement != PlayerTimeLabelPlacement.aboveProgress)
               const SizedBox(height: 6),

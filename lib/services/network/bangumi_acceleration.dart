@@ -11,7 +11,10 @@ enum BangumiAcceleration {
     'direct' => direct,
     'ech' => ech,
     'mirror' => mirror,
-    _ => GStorage.getSetting(SettingsKeys.enableBangumiProxy) ? mirror : direct,
+    // Covers settings written by older builds before this explicit choice was
+    // introduced. They now follow the ECH default rather than enabling the
+    // mirror implicitly.
+    _ => ech,
   };
 
   String get label => switch (this) {

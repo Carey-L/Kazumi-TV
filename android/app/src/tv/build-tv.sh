@@ -35,10 +35,23 @@ prepend_newest_cmake
 
 cd "$project_root"
 flutter pub get
+
+# dandanplay answers 403 without an AppId, so release credentials have to be
+# injected the same way CI does. Reuse the project-local defines file when it
+# exists.
+build_args=()
+if [ -f .kazumi_build_defines.env ]; then
+  build_args+=(--dart-define-from-file=.kazumi_build_defines.env)
+  echo "Using credentials from .kazumi_build_defines.env"
+else
+  echo "warning: no .kazumi_build_defines.env; dandanplay search will fail with HTTP 403" >&2
+fi
+
 flutter build apk \
   --release \
   --flavor tv \
   --target-platform android-arm,android-arm64 \
+  ${build_args[@]+"${build_args[@]}"} \
   "$@"
 
 test -f "$flutter_output"

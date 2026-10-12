@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:kazumi/bean/widget/side_panel_transition.dart';
 
 class VideoSidePanel extends StatefulWidget {
@@ -29,12 +30,15 @@ class VideoSidePanelState extends State<VideoSidePanel>
     vsync: this,
     duration: SidePanelTransition.duration,
   );
-  late final Animation<double> _opacity =
-      _animation.drive(CurveTween(curve: Curves.easeIn));
+  late final Animation<double> _opacity = _animation.drive(
+    CurveTween(curve: Curves.easeIn),
+  );
 
   bool get _isOpening =>
       _animation.status == AnimationStatus.forward ||
       _animation.status == AnimationStatus.completed;
+
+  bool get isOpen => _isOpening;
 
   void toggle() {
     if (_isOpening) {
@@ -58,6 +62,21 @@ class VideoSidePanelState extends State<VideoSidePanel>
     widget.onClosed?.call();
   }
 
+  KeyEventResult _handleKeyEvent(FocusNode _, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.goBack ||
+        event.logicalKey == LogicalKeyboardKey.browserBack ||
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      close();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+        event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
   @override
   void didUpdateWidget(VideoSidePanel oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -73,58 +92,61 @@ class VideoSidePanelState extends State<VideoSidePanel>
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) => AnimatedBuilder(
-          animation: _animation,
-          builder: (context, child) {
-            if (_animation.isDismissed) return const SizedBox.shrink();
-            return Stack(
-              alignment: Alignment.centerRight,
-              children: [
-                FadeTransition(
-                  opacity: _opacity,
-                  child: GestureDetector(
-                    onTap: close,
-                    child: SizedBox.expand(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.5),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
+    builder: (context, constraints) => AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        if (_animation.isDismissed) return const SizedBox.shrink();
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            FadeTransition(
+              opacity: _opacity,
+              child: GestureDetector(
+                onTap: close,
+                child: SizedBox.expand(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
                     ),
                   ),
                 ),
-                SidePanelTransition(animation: _animation, child: child!),
-              ],
-            );
-          },
-          child: SizedBox(
-            // Keep space outside the panel for dismissal.
-            width: math.min(constraints.maxWidth * 0.9,
-                (constraints.maxWidth / 3).clamp(320.0, 420.0)),
-            height: constraints.maxHeight,
-            child: Material(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: const BorderRadiusDirectional.only(
-                topStart: Radius.circular(28),
-                bottomStart: Radius.circular(28),
               ),
-              clipBehavior: Clip.antiAlias,
-              // Consume the hidden status-bar inset for the entire overlay.
-              child: MediaQuery.removePadding(
-                context: context,
-                removeTop: true,
-                removeLeft: true,
-                child: SafeArea(child: widget.child),
+            ),
+            FadeTransition(
+              opacity: _opacity,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.96, end: 1).animate(
+                  CurvedAnimation(
+                    parent: _animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+                child: child!,
               ),
+            ),
+          ],
+        );
+      },
+      child: SizedBox(
+        width: math.min(constraints.maxWidth - 32, 560),
+        height: math.min(constraints.maxHeight - 32, 720),
+        child: Material(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(28),
+          clipBehavior: Clip.antiAlias,
+          // Consume the hidden status-bar inset for the entire overlay.
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            removeLeft: true,
+            child: Focus(
+              autofocus: true,
+              onKeyEvent: _handleKeyEvent,
+              child: SafeArea(child: widget.child),
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }

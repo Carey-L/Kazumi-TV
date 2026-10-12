@@ -133,8 +133,8 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
     if (!isTvBuild) return theme;
 
     return theme.copyWith(
-      focusColor: theme.colorScheme.primary.withValues(alpha: 0.32),
-      hoverColor: theme.colorScheme.primary.withValues(alpha: 0.16),
+      focusColor: Colors.white.withValues(alpha: 0.32),
+      hoverColor: Colors.white.withValues(alpha: 0.16),
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: const VisualDensity(horizontal: 1, vertical: 1),
     );
@@ -144,11 +144,13 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.paused) {
-      KazumiLogger()
-          .i("AppLifecycleState.paused: Application moved to background");
+      KazumiLogger().i(
+        "AppLifecycleState.paused: Application moved to background",
+      );
     } else if (state == AppLifecycleState.resumed) {
-      KazumiLogger()
-          .i("AppLifecycleState.resumed: Application moved to foreground");
+      KazumiLogger().i(
+        "AppLifecycleState.resumed: Application moved to foreground",
+      );
       await MeteredNetworkService.refresh();
     } else if (state == AppLifecycleState.inactive) {
       KazumiLogger().i("AppLifecycleState.inactive: Application is inactive");
@@ -160,7 +162,8 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
     super.didChangePlatformBrightness();
     final ThemeProvider themeProvider = context.read<ThemeProvider>();
     KazumiLogger().i(
-        "Platform brightness changed, themeMode: ${themeProvider.themeMode}");
+      "Platform brightness changed, themeMode: ${themeProvider.themeMode}",
+    );
   }
 
   @override
@@ -195,10 +198,16 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           supportedLocales: const [
             Locale.fromSubtags(
-                languageCode: 'zh', scriptCode: 'Hans', countryCode: "CN")
+              languageCode: 'zh',
+              scriptCode: 'Hans',
+              countryCode: "CN",
+            ),
           ],
           locale: const Locale.fromSubtags(
-              languageCode: 'zh', scriptCode: 'Hans', countryCode: "CN"),
+            languageCode: 'zh',
+            scriptCode: 'Hans',
+            countryCode: "CN",
+          ),
           theme: lightTheme,
           darkTheme: effectiveDarkTheme,
           themeMode: themeProvider.themeMode,

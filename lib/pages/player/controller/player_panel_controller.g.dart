@@ -9,8 +9,10 @@ part of 'player_panel_controller.dart';
 // ignore_for_file: non_constant_identifier_names, unnecessary_brace_in_string_interps, unnecessary_lambdas, prefer_expression_function_bodies, lines_longer_than_80_chars, avoid_as, avoid_annotating_with_dynamic, no_leading_underscores_for_local_identifiers
 
 mixin _$PlayerPanelController on _PlayerPanelController, Store {
-  late final _$aspectRatioModeAtom =
-      Atom(name: '_PlayerPanelController.aspectRatioMode', context: context);
+  late final _$aspectRatioModeAtom = Atom(
+    name: '_PlayerPanelController.aspectRatioMode',
+    context: context,
+  );
 
   @override
   PlayerAspectRatio get aspectRatioMode {
@@ -25,24 +27,10 @@ mixin _$PlayerPanelController on _PlayerPanelController, Store {
     });
   }
 
-  late final _$brightnessAtom =
-      Atom(name: '_PlayerPanelController.brightness', context: context);
-
-  @override
-  double get brightness {
-    _$brightnessAtom.reportRead();
-    return super.brightness;
-  }
-
-  @override
-  set brightness(double value) {
-    _$brightnessAtom.reportWrite(value, super.brightness, () {
-      super.brightness = value;
-    });
-  }
-
-  late final _$lockPanelAtom =
-      Atom(name: '_PlayerPanelController.lockPanel', context: context);
+  late final _$lockPanelAtom = Atom(
+    name: '_PlayerPanelController.lockPanel',
+    context: context,
+  );
 
   @override
   bool get lockPanel {
@@ -58,7 +46,9 @@ mixin _$PlayerPanelController on _PlayerPanelController, Store {
   }
 
   late final _$showVideoControllerAtom = Atom(
-      name: '_PlayerPanelController.showVideoController', context: context);
+    name: '_PlayerPanelController.showVideoController',
+    context: context,
+  );
 
   @override
   bool get showVideoController {
@@ -73,8 +63,10 @@ mixin _$PlayerPanelController on _PlayerPanelController, Store {
     });
   }
 
-  late final _$showSeekTimeAtom =
-      Atom(name: '_PlayerPanelController.showSeekTime', context: context);
+  late final _$showSeekTimeAtom = Atom(
+    name: '_PlayerPanelController.showSeekTime',
+    context: context,
+  );
 
   @override
   bool get showSeekTime {
@@ -89,8 +81,10 @@ mixin _$PlayerPanelController on _PlayerPanelController, Store {
     });
   }
 
-  late final _$seekCancelPendingAtom =
-      Atom(name: '_PlayerPanelController.seekCancelPending', context: context);
+  late final _$seekCancelPendingAtom = Atom(
+    name: '_PlayerPanelController.seekCancelPending',
+    context: context,
+  );
 
   @override
   bool get seekCancelPending {
@@ -105,40 +99,10 @@ mixin _$PlayerPanelController on _PlayerPanelController, Store {
     });
   }
 
-  late final _$showBrightnessAtom =
-      Atom(name: '_PlayerPanelController.showBrightness', context: context);
-
-  @override
-  bool get showBrightness {
-    _$showBrightnessAtom.reportRead();
-    return super.showBrightness;
-  }
-
-  @override
-  set showBrightness(bool value) {
-    _$showBrightnessAtom.reportWrite(value, super.showBrightness, () {
-      super.showBrightness = value;
-    });
-  }
-
-  late final _$showVolumeAtom =
-      Atom(name: '_PlayerPanelController.showVolume', context: context);
-
-  @override
-  bool get showVolume {
-    _$showVolumeAtom.reportRead();
-    return super.showVolume;
-  }
-
-  @override
-  set showVolume(bool value) {
-    _$showVolumeAtom.reportWrite(value, super.showVolume, () {
-      super.showVolume = value;
-    });
-  }
-
-  late final _$showPlaySpeedAtom =
-      Atom(name: '_PlayerPanelController.showPlaySpeed', context: context);
+  late final _$showPlaySpeedAtom = Atom(
+    name: '_PlayerPanelController.showPlaySpeed',
+    context: context,
+  );
 
   @override
   bool get showPlaySpeed {
@@ -153,40 +117,10 @@ mixin _$PlayerPanelController on _PlayerPanelController, Store {
     });
   }
 
-  late final _$brightnessSeekingAtom =
-      Atom(name: '_PlayerPanelController.brightnessSeeking', context: context);
-
-  @override
-  bool get brightnessSeeking {
-    _$brightnessSeekingAtom.reportRead();
-    return super.brightnessSeeking;
-  }
-
-  @override
-  set brightnessSeeking(bool value) {
-    _$brightnessSeekingAtom.reportWrite(value, super.brightnessSeeking, () {
-      super.brightnessSeeking = value;
-    });
-  }
-
-  late final _$volumeSeekingAtom =
-      Atom(name: '_PlayerPanelController.volumeSeeking', context: context);
-
-  @override
-  bool get volumeSeeking {
-    _$volumeSeekingAtom.reportRead();
-    return super.volumeSeeking;
-  }
-
-  @override
-  set volumeSeeking(bool value) {
-    _$volumeSeekingAtom.reportWrite(value, super.volumeSeeking, () {
-      super.volumeSeeking = value;
-    });
-  }
-
-  late final _$canHidePlayerPanelAtom =
-      Atom(name: '_PlayerPanelController.canHidePlayerPanel', context: context);
+  late final _$canHidePlayerPanelAtom = Atom(
+    name: '_PlayerPanelController.canHidePlayerPanel',
+    context: context,
+  );
 
   @override
   bool get canHidePlayerPanel {
@@ -201,13 +135,16 @@ mixin _$PlayerPanelController on _PlayerPanelController, Store {
     });
   }
 
-  late final _$_PlayerPanelControllerActionController =
-      ActionController(name: '_PlayerPanelController', context: context);
+  late final _$_PlayerPanelControllerActionController = ActionController(
+    name: '_PlayerPanelController',
+    context: context,
+  );
 
   @override
   void reset() {
     final _$actionInfo = _$_PlayerPanelControllerActionController.startAction(
-        name: '_PlayerPanelController.reset');
+      name: '_PlayerPanelController.reset',
+    );
     try {
       return super.reset();
     } finally {
@@ -219,16 +156,11 @@ mixin _$PlayerPanelController on _PlayerPanelController, Store {
   String toString() {
     return '''
 aspectRatioMode: ${aspectRatioMode},
-brightness: ${brightness},
 lockPanel: ${lockPanel},
 showVideoController: ${showVideoController},
 showSeekTime: ${showSeekTime},
 seekCancelPending: ${seekCancelPending},
-showBrightness: ${showBrightness},
-showVolume: ${showVolume},
 showPlaySpeed: ${showPlaySpeed},
-brightnessSeeking: ${brightnessSeeking},
-volumeSeeking: ${volumeSeeking},
 canHidePlayerPanel: ${canHidePlayerPanel}
     ''';
   }

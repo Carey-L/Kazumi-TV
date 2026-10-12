@@ -9,8 +9,10 @@ part of 'player_debug_controller.dart';
 // ignore_for_file: non_constant_identifier_names, unnecessary_brace_in_string_interps, unnecessary_lambdas, prefer_expression_function_bodies, lines_longer_than_80_chars, avoid_as, avoid_annotating_with_dynamic, no_leading_underscores_for_local_identifiers
 
 mixin _$PlayerDebugController on _PlayerDebugController, Store {
-  late final _$playerLogAtom =
-      Atom(name: '_PlayerDebugController.playerLog', context: context);
+  late final _$playerLogAtom = Atom(
+    name: '_PlayerDebugController.playerLog',
+    context: context,
+  );
 
   @override
   ObservableList<String> get playerLog {
@@ -25,8 +27,10 @@ mixin _$PlayerDebugController on _PlayerDebugController, Store {
     });
   }
 
-  late final _$playerWidthAtom =
-      Atom(name: '_PlayerDebugController.playerWidth', context: context);
+  late final _$playerWidthAtom = Atom(
+    name: '_PlayerDebugController.playerWidth',
+    context: context,
+  );
 
   @override
   int get playerWidth {
@@ -41,8 +45,10 @@ mixin _$PlayerDebugController on _PlayerDebugController, Store {
     });
   }
 
-  late final _$playerHeightAtom =
-      Atom(name: '_PlayerDebugController.playerHeight', context: context);
+  late final _$playerHeightAtom = Atom(
+    name: '_PlayerDebugController.playerHeight',
+    context: context,
+  );
 
   @override
   int get playerHeight {
@@ -57,8 +63,10 @@ mixin _$PlayerDebugController on _PlayerDebugController, Store {
     });
   }
 
-  late final _$playerVideoParamsAtom =
-      Atom(name: '_PlayerDebugController.playerVideoParams', context: context);
+  late final _$playerVideoParamsAtom = Atom(
+    name: '_PlayerDebugController.playerVideoParams',
+    context: context,
+  );
 
   @override
   String get playerVideoParams {
@@ -73,8 +81,10 @@ mixin _$PlayerDebugController on _PlayerDebugController, Store {
     });
   }
 
-  late final _$playerAudioParamsAtom =
-      Atom(name: '_PlayerDebugController.playerAudioParams', context: context);
+  late final _$playerAudioParamsAtom = Atom(
+    name: '_PlayerDebugController.playerAudioParams',
+    context: context,
+  );
 
   @override
   String get playerAudioParams {
@@ -89,8 +99,10 @@ mixin _$PlayerDebugController on _PlayerDebugController, Store {
     });
   }
 
-  late final _$playerPlaylistAtom =
-      Atom(name: '_PlayerDebugController.playerPlaylist', context: context);
+  late final _$playerPlaylistAtom = Atom(
+    name: '_PlayerDebugController.playerPlaylist',
+    context: context,
+  );
 
   @override
   String get playerPlaylist {
@@ -105,8 +117,10 @@ mixin _$PlayerDebugController on _PlayerDebugController, Store {
     });
   }
 
-  late final _$playerAudioTracksAtom =
-      Atom(name: '_PlayerDebugController.playerAudioTracks', context: context);
+  late final _$playerAudioTracksAtom = Atom(
+    name: '_PlayerDebugController.playerAudioTracks',
+    context: context,
+  );
 
   @override
   String get playerAudioTracks {
@@ -121,8 +135,10 @@ mixin _$PlayerDebugController on _PlayerDebugController, Store {
     });
   }
 
-  late final _$playerVideoTracksAtom =
-      Atom(name: '_PlayerDebugController.playerVideoTracks', context: context);
+  late final _$playerVideoTracksAtom = Atom(
+    name: '_PlayerDebugController.playerVideoTracks',
+    context: context,
+  );
 
   @override
   String get playerVideoTracks {
@@ -137,8 +153,10 @@ mixin _$PlayerDebugController on _PlayerDebugController, Store {
     });
   }
 
-  late final _$playerAudioBitrateAtom =
-      Atom(name: '_PlayerDebugController.playerAudioBitrate', context: context);
+  late final _$playerAudioBitrateAtom = Atom(
+    name: '_PlayerDebugController.playerAudioBitrate',
+    context: context,
+  );
 
   @override
   String get playerAudioBitrate {
@@ -153,8 +171,10 @@ mixin _$PlayerDebugController on _PlayerDebugController, Store {
     });
   }
 
-  late final _$playerVideoBitrateAtom =
-      Atom(name: '_PlayerDebugController.playerVideoBitrate', context: context);
+  late final _$playerVideoBitrateAtom = Atom(
+    name: '_PlayerDebugController.playerVideoBitrate',
+    context: context,
+  );
 
   @override
   String get playerVideoBitrate {

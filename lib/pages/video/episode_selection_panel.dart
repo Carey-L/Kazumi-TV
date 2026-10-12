@@ -40,10 +40,28 @@ class EpisodeSelectionPanel extends StatefulWidget {
 
 class EpisodeSelectionPanelState extends State<EpisodeSelectionPanel> {
   final _scrollController = ScrollController();
-  late final _observerController =
-      ListObserverController(controller: _scrollController)
-        ..cacheJumpIndexOffset = false;
+  final FocusNode _panelFocus = FocusNode(debugLabel: 'EpisodeSelectionPanel');
+  final _roadSelectorKey = GlobalKey<_RoadSelectorState>();
+  late final _observerController = ListObserverController(
+    controller: _scrollController,
+  )..cacheJumpIndexOffset = false;
   late int _visibleRoad = widget.selectedRoad;
+
+  @override
+  void initState() {
+    super.initState();
+    // Without this the D-pad stays on the player surface and the episode grid
+    // cannot be reached after the panel slides in.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final roadSelector = _roadSelectorKey.currentState;
+      if (roadSelector != null) {
+        roadSelector.requestFocus();
+      } else {
+        _panelFocus.requestFocus();
+      }
+    });
+  }
 
   bool get _canLocate =>
       widget.selectedRoad >= 0 &&
@@ -92,6 +110,7 @@ class EpisodeSelectionPanelState extends State<EpisodeSelectionPanel> {
 
   @override
   void dispose() {
+    _panelFocus.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -105,133 +124,153 @@ class EpisodeSelectionPanelState extends State<EpisodeSelectionPanel> {
         : null;
     final count = road?.data.length ?? 0;
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final textScaler = MediaQuery.textScalerOf(context);
-      return ListViewObserver(
-        controller: _observerController,
-        child: Scrollbar(
-          controller: _scrollController,
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Semantics(
-                        header: true,
-                        child: Text(
-                          widget.title.isEmpty ? '剧集列表' : widget.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: colors.onSurface,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _RoadSelector(
-                        roads: widget.roads,
-                        visibleRoad: _visibleRoad,
-                        isOffline: widget.isOffline,
-                        onChanged: _selectRoad,
-                        disableAnimations: widget.disableAnimations,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _EpisodeToolbar(
-                  height: _toolbarHeight,
-                  color: colors.surface,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            textScaler.scale(14) > 21 ||
-                                    constraints.maxWidth < 320
-                                ? '$count 集'
-                                : widget.isOffline
-                                    ? '已缓存 · $count 集'
-                                    : '全部剧集 · $count 集',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: colors.onSurfaceVariant,
+    return Focus(
+      focusNode: _panelFocus,
+      // Scope anchor for the D-pad; the grid inside keeps real focus.
+      canRequestFocus: true,
+      skipTraversal: true,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final textScaler = MediaQuery.textScalerOf(context);
+          return ListViewObserver(
+            controller: _observerController,
+            child: Scrollbar(
+              controller: _scrollController,
+              child: CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Semantics(
+                            header: true,
+                            child: Text(
+                              widget.title.isEmpty ? '剧集列表' : widget.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: colors.onSurface,
+                              ),
                             ),
                           ),
-                        ),
-                        IconButton(
-                          tooltip: '定位当前集',
-                          onPressed: _canLocate ? revealCurrentEpisode : null,
-                          icon: const Icon(Icons.my_location_rounded, size: 20),
-                        ),
-                        if (!widget.isOffline)
-                          IconButton.filledTonal(
-                            tooltip: '缓存剧集',
-                            onPressed: count > 0 && widget.onDownload != null
-                                ? () => widget.onDownload!(_visibleRoad)
-                                : null,
-                            icon: const Icon(Icons.download_rounded, size: 20),
+                          const SizedBox(height: 16),
+                          _RoadSelector(
+                            key: _roadSelectorKey,
+                            roads: widget.roads,
+                            visibleRoad: _visibleRoad,
+                            isOffline: widget.isOffline,
+                            onChanged: _selectRoad,
+                            disableAnimations: widget.disableAnimations,
                           ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _EpisodeToolbar(
+                      height: _toolbarHeight,
+                      color: colors.surface,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                textScaler.scale(14) > 21 ||
+                                        constraints.maxWidth < 320
+                                    ? '$count 集'
+                                    : widget.isOffline
+                                    ? '已缓存 · $count 集'
+                                    : '全部剧集 · $count 集',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: '定位当前集',
+                              onPressed: _canLocate
+                                  ? revealCurrentEpisode
+                                  : null,
+                              icon: const Icon(
+                                Icons.my_location_rounded,
+                                size: 20,
+                              ),
+                            ),
+                            if (!widget.isOffline)
+                              IconButton.filledTonal(
+                                tooltip: '缓存剧集',
+                                onPressed:
+                                    count > 0 && widget.onDownload != null
+                                    ? () => widget.onDownload!(_visibleRoad)
+                                    : null,
+                                icon: const Icon(
+                                  Icons.download_rounded,
+                                  size: 20,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (count == 0)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: GeneralEmptyState(
+                        icon: Icons.video_library_outlined,
+                        title: '这条线路暂无剧集',
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        16,
+                        0,
+                        16,
+                        16 + MediaQuery.paddingOf(context).bottom,
+                      ),
+                      sliver: SliverList.builder(
+                        itemCount: count,
+                        itemBuilder: (context, index) {
+                          final episode = index + 1;
+                          final name =
+                              index < road!.identifier.length &&
+                                  road.identifier[index].trim().isNotEmpty
+                              ? road.identifier[index]
+                              : '第$episode集';
+                          return _EpisodeRow(
+                            key: ValueKey('$_visibleRoad:$episode'),
+                            name: name,
+                            first: index == 0,
+                            last: index == count - 1,
+                            selected:
+                                _visibleRoad == widget.selectedRoad &&
+                                episode == widget.selectedEpisode,
+                            isPlaying: widget.isPlaying,
+                            isOffline: widget.isOffline,
+                            download: widget.downloads[road.data[index]],
+                            disableAnimations: widget.disableAnimations,
+                            onTap: () =>
+                                widget.onEpisodeSelected(episode, _visibleRoad),
+                          );
+                        },
+                      ),
+                    ),
+                ],
               ),
-              if (count == 0)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: GeneralEmptyState(
-                    icon: Icons.video_library_outlined,
-                    title: '这条线路暂无剧集',
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    0,
-                    16,
-                    16 + MediaQuery.paddingOf(context).bottom,
-                  ),
-                  sliver: SliverList.builder(
-                    itemCount: count,
-                    itemBuilder: (context, index) {
-                      final episode = index + 1;
-                      final name = index < road!.identifier.length &&
-                              road.identifier[index].trim().isNotEmpty
-                          ? road.identifier[index]
-                          : '第$episode集';
-                      return _EpisodeRow(
-                        key: ValueKey('$_visibleRoad:$episode'),
-                        name: name,
-                        first: index == 0,
-                        last: index == count - 1,
-                        selected: _visibleRoad == widget.selectedRoad &&
-                            episode == widget.selectedEpisode,
-                        isPlaying: widget.isPlaying,
-                        isOffline: widget.isOffline,
-                        download: widget.downloads[road.data[index]],
-                        disableAnimations: widget.disableAnimations,
-                        onTap: () =>
-                            widget.onEpisodeSelected(episode, _visibleRoad),
-                      );
-                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    });
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -254,9 +293,14 @@ class _EpisodeToolbar extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-          BuildContext context, double shrinkOffset, bool overlapsContent) =>
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) =>
       // Fill minExtent even when desktop controls use a smaller touch target.
-      SizedBox.expand(child: ColoredBox(color: color, child: child));
+      SizedBox.expand(
+        child: ColoredBox(color: color, child: child),
+      );
 
   @override
   bool shouldRebuild(covariant _EpisodeToolbar oldDelegate) =>
@@ -267,6 +311,7 @@ class _EpisodeToolbar extends SliverPersistentHeaderDelegate {
 
 class _RoadSelector extends StatefulWidget {
   const _RoadSelector({
+    super.key,
     required this.roads,
     required this.visibleRoad,
     required this.isOffline,
@@ -286,14 +331,22 @@ class _RoadSelector extends StatefulWidget {
 
 class _RoadSelectorState extends State<_RoadSelector> {
   final _focusNode = FocusNode(debugLabel: 'Playback road selector');
+  final Map<int, FocusNode> _optionFocusNodes = {};
   FocusNode? _focusBeforeOpen;
   bool _pointerActivation = false;
 
   String _name(int index) => index >= 0 && index < widget.roads.length
       ? (widget.roads[index].name.trim().isEmpty
-          ? '播放线路 ${index + 1}'
-          : widget.roads[index].name)
+            ? '播放线路 ${index + 1}'
+            : widget.roads[index].name)
       : '暂无线路';
+
+  FocusNode _optionFocusNode(int index) => _optionFocusNodes.putIfAbsent(
+    index,
+    () => FocusNode(debugLabel: 'Playback road option $index'),
+  );
+
+  void requestFocus() => _focusNode.requestFocus();
 
   void _toggleMenu(MenuController controller) {
     final pointerActivation = _pointerActivation;
@@ -303,9 +356,15 @@ class _RoadSelectorState extends State<_RoadSelector> {
       return;
     }
     final previousFocus = FocusManager.instance.primaryFocus;
-    _focusBeforeOpen =
-        pointerActivation && previousFocus == _focusNode ? null : previousFocus;
+    _focusBeforeOpen = pointerActivation && previousFocus == _focusNode
+        ? null
+        : previousFocus;
     controller.open();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && controller.isOpen) {
+        _optionFocusNode(widget.visibleRoad).requestFocus();
+      }
+    });
   }
 
   void _handleClose() {
@@ -316,7 +375,8 @@ class _RoadSelectorState extends State<_RoadSelector> {
         previousFocus.context?.mounted != true ||
         !previousFocus.canRequestFocus) {
       _focusNode.unfocus(
-          disposition: UnfocusDisposition.previouslyFocusedChild);
+        disposition: UnfocusDisposition.previouslyFocusedChild,
+      );
       return;
     }
     if (previousFocus is FocusScopeNode) {
@@ -330,6 +390,9 @@ class _RoadSelectorState extends State<_RoadSelector> {
   @override
   void dispose() {
     _focusNode.dispose();
+    for (final node in _optionFocusNodes.values) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -346,11 +409,13 @@ class _RoadSelectorState extends State<_RoadSelector> {
         inMutuallyExclusiveGroup: true,
         child: MenuItemButton(
           key: ValueKey('road-option-$index'),
+          focusNode: _optionFocusNode(index),
           onPressed: () => widget.onChanged(index),
           style: ButtonStyle(
             minimumSize: WidgetStatePropertyAll(Size(width, 56)),
             padding: const WidgetStatePropertyAll(
-                EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+              EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
             visualDensity: VisualDensity.standard,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             backgroundColor: WidgetStatePropertyAll(
@@ -364,14 +429,16 @@ class _RoadSelectorState extends State<_RoadSelector> {
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
-            shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-              borderRadius: selected
-                  ? BorderRadius.circular(20)
-                  : BorderRadius.vertical(
-                      top: Radius.circular(index == 0 ? 20 : 4),
-                      bottom: Radius.circular(last ? 20 : 4),
-                    ),
-            )),
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(
+                borderRadius: selected
+                    ? BorderRadius.circular(20)
+                    : BorderRadius.vertical(
+                        top: Radius.circular(index == 0 ? 20 : 4),
+                        bottom: Radius.circular(last ? 20 : 4),
+                      ),
+              ),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -401,110 +468,126 @@ class _RoadSelectorState extends State<_RoadSelector> {
     final canSwitch = widget.roads.length > 1;
     final reduceMotion =
         widget.disableAnimations || MediaQuery.disableAnimationsOf(context);
-    final duration =
-        reduceMotion ? Duration.zero : const Duration(milliseconds: 200);
+    final duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 200);
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final width =
-          math.min(constraints.maxWidth, MediaQuery.sizeOf(context).width - 32);
-      return MenuAnchor(
-        childFocusNode: _focusNode,
-        crossAxisUnconstrained: false,
-        consumeOutsideTap: true,
-        animated: !reduceMotion,
-        onClose: _handleClose,
-        alignmentOffset: const Offset(0, 8),
-        style: MenuStyle(
-          alignment: AlignmentDirectional.bottomStart,
-          backgroundColor: WidgetStatePropertyAll(colors.surfaceContainer),
-          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
-          elevation: const WidgetStatePropertyAll(3),
-          padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
-          shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          )),
-          minimumSize: WidgetStatePropertyAll(Size(width, 0)),
-          maximumSize: WidgetStatePropertyAll(Size(
-              width, math.min(400, MediaQuery.sizeOf(context).height - 32))),
-          visualDensity: VisualDensity.standard,
-        ),
-        menuChildren: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-            child: Text(
-              '选择播放线路',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: colors.onSurfaceVariant,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = math.min(
+          constraints.maxWidth,
+          MediaQuery.sizeOf(context).width - 32,
+        );
+        return MenuAnchor(
+          childFocusNode: _focusNode,
+          crossAxisUnconstrained: false,
+          consumeOutsideTap: true,
+          animated: !reduceMotion,
+          onClose: _handleClose,
+          alignmentOffset: const Offset(0, 8),
+          style: MenuStyle(
+            alignment: AlignmentDirectional.bottomStart,
+            backgroundColor: WidgetStatePropertyAll(colors.surfaceContainer),
+            surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+            elevation: const WidgetStatePropertyAll(3),
+            padding: const WidgetStatePropertyAll(EdgeInsets.all(8)),
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            ),
+            minimumSize: WidgetStatePropertyAll(Size(width, 0)),
+            maximumSize: WidgetStatePropertyAll(
+              Size(
+                width,
+                math.min(400, MediaQuery.sizeOf(context).height - 32),
               ),
             ),
+            visualDensity: VisualDensity.standard,
           ),
-          for (var i = 0; i < widget.roads.length; i++)
-            _buildMenuItem(i, width - 16),
-        ],
-        builder: (context, controller, child) {
-          final open = controller.isOpen;
-          final foreground =
-              open ? colors.onSecondaryContainer : colors.onSurface;
-          return Semantics(
-            button: canSwitch,
-            expanded: canSwitch ? open : null,
-            label: canSwitch ? '切换播放线路' : null,
-            child: Material(
-              animationDuration: duration,
-              color:
-                  open ? colors.secondaryContainer : colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(open ? 16 : 20),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                focusNode: _focusNode,
-                onTapUp: canSwitch ? (_) => _pointerActivation = true : null,
-                onTap: canSwitch ? () => _toggleMenu(controller) : null,
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.isOffline ? '离线观看' : '播放线路',
-                              style: theme.textTheme.labelMedium
-                                  ?.copyWith(color: foreground),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _name(widget.visibleRoad),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: foreground,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (canSwitch) ...[
-                        const SizedBox(width: 8),
-                        AnimatedRotation(
-                          turns: open ? 0.5 : 0,
-                          duration: duration,
-                          curve: Curves.easeOutCubic,
-                          child: Icon(Icons.keyboard_arrow_down_rounded,
-                              color: foreground),
-                        ),
-                      ],
-                    ],
-                  ),
+          menuChildren: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: Text(
+                '选择播放线路',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: colors.onSurfaceVariant,
                 ),
               ),
             ),
-          );
-        },
-      );
-    });
+            for (var i = 0; i < widget.roads.length; i++)
+              _buildMenuItem(i, width - 16),
+          ],
+          builder: (context, controller, child) {
+            final open = controller.isOpen;
+            final foreground = open
+                ? colors.onSecondaryContainer
+                : colors.onSurface;
+            return Semantics(
+              button: canSwitch,
+              expanded: canSwitch ? open : null,
+              label: canSwitch ? '切换播放线路' : null,
+              child: Material(
+                animationDuration: duration,
+                color: open
+                    ? colors.secondaryContainer
+                    : colors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(open ? 16 : 20),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  focusNode: _focusNode,
+                  onTapUp: canSwitch ? (_) => _pointerActivation = true : null,
+                  onTap: canSwitch ? () => _toggleMenu(controller) : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.isOffline ? '离线观看' : '播放线路',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: foreground,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _name(widget.visibleRoad),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: foreground,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (canSwitch) ...[
+                          const SizedBox(width: 8),
+                          AnimatedRotation(
+                            turns: open ? 0.5 : 0,
+                            duration: duration,
+                            curve: Curves.easeOutCubic,
+                            child: Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: foreground,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 
@@ -549,16 +632,14 @@ class _EpisodeRowState extends State<_EpisodeRow>
       _press.value = target;
       return;
     }
-    _press.animateWith(SpringSimulation(
-      SpringDescription.withDampingRatio(
-        mass: 1,
-        stiffness: 500,
-        ratio: 0.8,
+    _press.animateWith(
+      SpringSimulation(
+        SpringDescription.withDampingRatio(mass: 1, stiffness: 500, ratio: 0.8),
+        _press.value,
+        target,
+        _press.velocity,
       ),
-      _press.value,
-      target,
-      _press.velocity,
-    ));
+    );
   }
 
   @override
@@ -572,8 +653,9 @@ class _EpisodeRowState extends State<_EpisodeRow>
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final foreground = widget.selected ? colors.onPrimary : colors.onSurface;
-    final status =
-        widget.isOffline ? DownloadStatus.completed : widget.download?.status;
+    final status = widget.isOffline
+        ? DownloadStatus.completed
+        : widget.download?.status;
     final downloadLabel = switch (status) {
       DownloadStatus.completed => '已缓存',
       DownloadStatus.downloading => '正在缓存',
@@ -583,8 +665,9 @@ class _EpisodeRowState extends State<_EpisodeRow>
       DownloadStatus.resolving => '正在解析',
       _ => null,
     };
-    final playbackLabel =
-        widget.selected ? (widget.isPlaying ? '正在播放' : '当前选集') : '播放';
+    final playbackLabel = widget.selected
+        ? (widget.isPlaying ? '正在播放' : '当前选集')
+        : '播放';
 
     final supportingText = [
       if (widget.selected) playbackLabel,
@@ -599,10 +682,12 @@ class _EpisodeRowState extends State<_EpisodeRow>
       onTap: widget.onTap,
       selected: widget.selected,
       inMutuallyExclusiveGroup: true,
-      label: '${widget.name}，$playbackLabel'
+      label:
+          '${widget.name}，$playbackLabel'
           '${downloadLabel == null ? '' : '，$downloadLabel'}',
       child: Tooltip(
-        message: '${widget.name} · $playbackLabel'
+        message:
+            '${widget.name} · $playbackLabel'
             '${downloadLabel == null ? '' : ' · $downloadLabel'}',
         excludeFromSemantics: true,
         child: AnimatedBuilder(
@@ -625,7 +710,10 @@ class _EpisodeRowState extends State<_EpisodeRow>
                     ? colors.primary
                     : colors.surfaceContainerLow,
                 borderRadius: BorderRadius.lerp(
-                    restShape, BorderRadius.circular(12), press),
+                  restShape,
+                  BorderRadius.circular(12),
+                  press,
+                ),
                 clipBehavior: Clip.antiAlias,
                 child: child,
               ),
@@ -649,8 +737,10 @@ class _EpisodeRowState extends State<_EpisodeRow>
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 56),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,8 +764,8 @@ class _EpisodeRowState extends State<_EpisodeRow>
                             color: widget.selected
                                 ? foreground
                                 : status == DownloadStatus.failed
-                                    ? colors.error
-                                    : colors.onSurfaceVariant,
+                                ? colors.error
+                                : colors.onSurfaceVariant,
                           ),
                         ),
                       ],

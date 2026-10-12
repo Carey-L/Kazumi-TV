@@ -65,6 +65,17 @@ try {
         '--target-platform',
         'android-arm,android-arm64'
     )
+    # dandanplay answers 403 without an AppId, so release credentials have to
+    # be injected the same way CI does. Reuse the project-local defines file
+    # when it exists.
+    $definesFile = Join-Path $projectRoot '.kazumi_build_defines.env'
+    if (Test-Path -LiteralPath $definesFile) {
+        $buildArguments += @('--dart-define-from-file', ".kazumi_build_defines.env")
+        Write-Host "Using credentials from .kazumi_build_defines.env"
+    }
+    else {
+        Write-Warning "No .kazumi_build_defines.env found: dandanplay search will fail with HTTP 403."
+    }
     if ($ExtraFlutterArguments) {
         $buildArguments += $ExtraFlutterArguments
     }
