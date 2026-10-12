@@ -88,7 +88,6 @@ final indexModule = createModule(
         '/onboarding',
         child: (context, state) => OnboardingPage(
           pluginsController: inject<PluginsController>(),
-          myController: inject<MyController>(),
         ),
         transition: TransitionType.none,
       )

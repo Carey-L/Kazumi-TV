@@ -7,24 +7,20 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/appbar/sys_app_bar.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
-import 'package:kazumi/pages/my/my_controller.dart';
 import 'package:kazumi/pages/onboarding/steps/mirror_settings_step.dart';
 import 'package:kazumi/pages/onboarding/steps/plugin_shop_step.dart';
 import 'package:kazumi/plugins/plugins.dart' show pluginNameKey;
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/storage/storage.dart';
-import 'package:kazumi/services/update/startup_update_check.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({
     super.key,
     required this.pluginsController,
-    required this.myController,
   });
 
   final PluginsController pluginsController;
-  final MyController myController;
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
@@ -135,11 +131,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       if (confirmed != true) return;
     }
     if (!mounted) return;
-    final myController = widget.myController;
-    unawaited(runStartupUpdateCheck(
-      isEnabled: () => GStorage.getSetting(SettingsKeys.autoUpdate),
-      checkForUpdate: () => myController.checkUpdate(type: 'auto'),
-    ));
     context.navigate(GStorage.getSetting(SettingsKeys.defaultStartupPage));
   }
 

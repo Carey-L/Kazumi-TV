@@ -6,16 +6,14 @@ import 'package:kazumi/pages/about/about_widgets.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
 
 class AboutPage extends StatelessWidget {
-  const AboutPage({super.key, required this.onCheckUpdate});
-
-  final Future<bool> Function() onCheckUpdate;
+  const AboutPage({super.key});
 
   @override
   Widget build(BuildContext context) => SettingsDetailScaffold(
         title: const Text('关于'),
         body: AboutContent(
           children: [
-            _ProjectHeader(onCheckUpdate: onCheckUpdate),
+            const _ProjectHeader(),
             const SizedBox(height: 24),
             LayoutBuilder(builder: (context, constraints) {
               final sections = [
@@ -96,9 +94,7 @@ class AboutPage extends StatelessWidget {
 }
 
 class _ProjectHeader extends StatelessWidget {
-  const _ProjectHeader({required this.onCheckUpdate});
-
-  final Future<bool> Function() onCheckUpdate;
+  const _ProjectHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -130,23 +126,6 @@ class _ProjectHeader extends StatelessWidget {
           Text(
             '基于自定义规则的开源番剧应用',
             style: theme.textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              CheckUpdateButton(onCheckUpdate: onCheckUpdate),
-              TextButton(
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                onPressed: () => openAboutLink(
-                  context,
-                  '${ApiEndpoints.sourceUrl}/releases',
-                ),
-                child: const Text('更新日志'),
-              ),
-            ],
           ),
         ],
       ),

@@ -16,7 +16,6 @@ import 'package:kazumi/pages/download/download_controller.dart';
 import 'package:kazumi/pages/plugin_editor/plugin_update_actions.dart';
 import 'package:kazumi/services/download/background_download_service.dart';
 import 'package:kazumi/services/platform/platform_environment_service.dart';
-import 'package:kazumi/services/update/startup_update_check.dart';
 import 'package:kazumi/navigation.dart';
 
 class InitPage extends StatefulWidget {
@@ -76,8 +75,7 @@ class _InitPageState extends State<InitPage> {
       return;
     }
     // First launch: no installed rules yet, hand over to the onboarding flow.
-    // OnboardingPage takes care of navigating to the default page and
-    // triggering the auto update check afterwards.
+    // OnboardingPage takes care of navigating to the default page.
     if (pluginsController.pluginList.isEmpty) {
       context.navigate('/onboarding');
       return;
@@ -86,13 +84,6 @@ class _InitPageState extends State<InitPage> {
     if (!mounted) {
       return;
     }
-    final updateController = myController;
-    unawaited(runStartupUpdateCheck(
-      isEnabled: () => GStorage.getSetting(SettingsKeys.autoUpdate),
-      checkForUpdate: () async {
-        await updateController.checkUpdate(type: 'auto');
-      },
-    ));
     _startDefaultPage();
   }
 
