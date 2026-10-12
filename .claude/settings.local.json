@@ -109,7 +109,14 @@
       "Bash(/mnt/c/Windows/System32/cmd.exe /c \"dart format lib/pages/video/episode_selection_panel.dart\")",
       "Bash(/mnt/c/Windows/System32/cmd.exe /c \"dart format lib/pages/player/player_item_panel.dart\")",
       "Bash(grep -E 'MainActivity|AndroidManifest|\\\\.kt$|\\\\.java$')",
-      "Bash(rg --files lib)"
+      "Bash(rg --files lib)",
+      "Bash(dart format *)",
+      "Bash(command -v flutter)",
+      "Bash(command -v fvm)",
+      "Bash(command -v dart)",
+      "Bash(/mnt/d/flutter/bin/flutter format *)",
+      "Bash(/mnt/d/flutter/bin/flutter analyze *)",
+      "Bash(/mnt/c/Windows/System32/cmd.exe *)"
     ]
   }
 }
