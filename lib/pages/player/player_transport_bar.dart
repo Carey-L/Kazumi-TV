@@ -48,7 +48,7 @@ class PlayerTransportBar extends StatelessWidget {
           Expanded(child: progressBuilder(TimeLabelLocation.none)),
           timeLabel,
           fullscreen,
-          trailing?,
+          ?trailing,
         ])
       : Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,7 +79,7 @@ class PlayerTransportBar extends StatelessWidget {
                         child: timeLabel),
                   Expanded(child: controls),
                   fullscreen,
-                  trailing?,
+                  ?trailing,
                 ])),
             if (timePlacement != PlayerTimeLabelPlacement.aboveProgress)
               const SizedBox(height: 6),

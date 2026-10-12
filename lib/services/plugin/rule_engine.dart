@@ -314,7 +314,7 @@ class _DefaultRuleRequestExecutor implements RuleRequestExecutor {
       // Clearance cookies are bound to the User-Agent they were issued to,
       // so the verified UA overrides the rule's own; sending a different one
       // would make the site serve the challenge page again.
-      if (verifiedUserAgent != null) 'user-agent': verifiedUserAgent,
+      'user-agent': ?verifiedUserAgent,
     };
     if (request.method == 'POST') {
       switch (request.bodyType) {
