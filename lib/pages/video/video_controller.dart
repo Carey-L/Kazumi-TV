@@ -8,8 +8,7 @@ import 'package:kazumi/pages/player/player_controller.dart';
 import 'package:kazumi/modules/bangumi/bangumi_item.dart';
 import 'package:kazumi/modules/download/download_module.dart';
 import 'package:kazumi/modules/history/history_module.dart';
-import 'package:kazumi/repositories/download_repository.dart';
-import 'package:kazumi/services/download/download_manager.dart';
+import 'package:kazumi/services/download/offline_playback_reader.dart';
 import 'package:kazumi/services/video_source/services.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:mobx/mobx.dart';
@@ -58,8 +57,7 @@ class VideoEpisodeSelection {
 abstract class _VideoPageController with Store implements Disposable {
   _VideoPageController(
     this.historyController,
-    this.downloadRepository,
-    this.downloadManager,
+    this.offlinePlaybackReader,
   );
 
   late BangumiItem bangumiItem;
@@ -141,8 +139,7 @@ abstract class _VideoPageController with Store implements Disposable {
   String _offlinePluginName = '';
 
   final HistoryController historyController;
-  final IDownloadRepository downloadRepository;
-  final IDownloadManager downloadManager;
+  final OfflinePlaybackReader offlinePlaybackReader;
 
   WebViewVideoSourceService? _videoSourceService;
 
@@ -581,9 +578,8 @@ abstract class _VideoPageController with Store implements Disposable {
 
   String? _getLocalVideoPath(
       int bangumiId, String pluginName, int episodeNumber) {
-    final episode =
-        downloadRepository.getEpisode(bangumiId, pluginName, episodeNumber);
-    return downloadManager.getLocalVideoPath(episode);
+    return offlinePlaybackReader.getLocalVideoPath(
+        bangumiId, pluginName, episodeNumber);
   }
 
   Future<void> _resolveWithVideoSourceService(

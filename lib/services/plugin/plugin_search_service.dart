@@ -1,20 +1,35 @@
 import 'package:kazumi/modules/search/plugin_search_module.dart';
-import 'package:kazumi/pages/info/info_controller.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/plugin/rule_engine_models.dart';
+import 'package:kazumi/utils/async_rate_limiter.dart';
 import 'package:kazumi/utils/async_session.dart';
+
+typedef PluginSearchStatusChanged =
+    void Function(String pluginName, PluginSearchStatus status);
+typedef PluginSearchResponseReceived =
+    void Function(PluginSearchResponse response);
+typedef PluginSearchResultsReset = void Function(String pluginName);
 
 class PluginSearchService {
   PluginSearchService({
-    required this.infoController,
     required this.pluginsController,
+    required this.onStatusChanged,
+    required this.onResponseReceived,
+    required this.onResultsReset,
+    required this.onResponsesCleared,
   });
 
-  final InfoController infoController;
   final PluginsController pluginsController;
+  final PluginSearchStatusChanged onStatusChanged;
+  final PluginSearchResponseReceived onResponseReceived;
+  final PluginSearchResultsReset onResultsReset;
+  final void Function() onResponsesCleared;
   final RuleCancelToken _cancelToken = RuleCancelToken();
+  final AsyncRateLimiter _requestLimiter = AsyncRateLimiter(
+    const Duration(milliseconds: 150),
+  );
 
   /// Per-plugin sessions so a replacement query (alias/manual search)
   /// invalidates the write-back of the still-running previous one.
@@ -24,11 +39,8 @@ class PluginSearchService {
   Future<void> querySource(String keyword, String pluginName) async {
     for (final plugin in pluginsController.pluginList) {
       if (plugin.name == pluginName) {
-        infoController.pluginSearchResponseList.removeWhere(
-          (response) => response.pluginName == pluginName,
-        );
-        infoController.pluginSearchStatus[pluginName] =
-            PluginSearchStatus.pending;
+        onResultsReset(pluginName);
+        onStatusChanged(pluginName, PluginSearchStatus.pending);
         await _queryPlugin(plugin, keyword);
         return;
       }
@@ -44,30 +56,22 @@ class PluginSearchService {
       if (plugin.name != pluginName) continue;
       final result = plugin.parseHarvestedSearch(html);
       if (result == null) return false;
-      infoController.pluginSearchResponseList.removeWhere(
-        (response) => response.pluginName == pluginName,
-      );
-      infoController.pluginSearchStatus[pluginName] =
-          PluginSearchStatus.success;
+      onStatusChanged(pluginName, PluginSearchStatus.success);
       pluginsController.validityTracker.markSearchValid(pluginName);
-      infoController.pluginSearchResponseList.add(result);
+      onResponseReceived(result);
       return true;
     }
     return false;
   }
 
   Future<void> queryAllSource(String keyword) async {
-    infoController.pluginSearchResponseList.clear();
-    infoController.pluginSearchStatus.clear();
+    onResponsesCleared();
 
     final plugins = List<Plugin>.of(pluginsController.pluginList);
     for (final plugin in plugins) {
-      infoController.pluginSearchStatus[plugin.name] =
-          PluginSearchStatus.pending;
+      onStatusChanged(plugin.name, PluginSearchStatus.pending);
     }
-    await Future.wait(
-      plugins.map((plugin) => _queryPlugin(plugin, keyword)),
-    );
+    await Future.wait(plugins.map((plugin) => _queryPlugin(plugin, keyword)));
   }
 
   Future<void> _queryPlugin(Plugin plugin, String keyword) async {
@@ -76,18 +80,19 @@ class PluginSearchService {
         .putIfAbsent(plugin.name, AsyncSessionOwner.new)
         .begin();
     try {
-      final result = await plugin.queryBangumi(
-        keyword,
-        shouldRethrow: true,
-        cancelToken: _cancelToken,
+      final result = await _requestLimiter.run(
+        () => plugin.queryBangumi(
+          keyword,
+          shouldRethrow: true,
+          cancelToken: _cancelToken,
+        ),
       );
       if (_isCancelled || session.isStale) return;
-      infoController.pluginSearchStatus[plugin.name] =
-          PluginSearchStatus.success;
+      onStatusChanged(plugin.name, PluginSearchStatus.success);
       if (result.data.isNotEmpty) {
         pluginsController.validityTracker.markSearchValid(plugin.name);
       }
-      infoController.pluginSearchResponseList.add(result);
+      onResponseReceived(result);
     } catch (error) {
       if (_isCancelled || session.isStale) return;
       _handleSearchError(plugin, error);
@@ -99,21 +104,19 @@ class PluginSearchService {
       KazumiLogger().i(
         'PluginSearchService: captcha required for ${error.pluginName}',
       );
-      infoController.pluginSearchStatus[error.pluginName] =
-          PluginSearchStatus.captcha;
+      onStatusChanged(error.pluginName, PluginSearchStatus.captcha);
       return;
     }
     if (error is NoResultException) {
       KazumiLogger().i(
         'PluginSearchService: no results for ${error.pluginName}',
       );
-      infoController.pluginSearchStatus[error.pluginName] =
-          PluginSearchStatus.noResult;
+      onStatusChanged(error.pluginName, PluginSearchStatus.noResult);
       return;
     }
     final name = error is SearchErrorException ? error.pluginName : plugin.name;
     KazumiLogger().w('PluginSearchService: search error for $name');
-    infoController.pluginSearchStatus[name] = PluginSearchStatus.error;
+    onStatusChanged(name, PluginSearchStatus.error);
   }
 
   void cancel() {

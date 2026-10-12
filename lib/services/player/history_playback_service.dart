@@ -1,6 +1,6 @@
 import 'package:kazumi/modules/download/download_module.dart';
 import 'package:kazumi/modules/history/history_module.dart';
-import 'package:kazumi/pages/download/download_controller.dart';
+import 'package:kazumi/services/download/offline_playback_reader.dart';
 import 'package:kazumi/pages/video/video_playback_args.dart';
 import 'package:kazumi/plugins/plugins.dart';
 import 'package:kazumi/plugins/plugins_controller.dart';
@@ -29,10 +29,10 @@ class HistoryPlaybackUnavailable extends HistoryPlaybackResult {
 /// The history page and the my page share this one resolution path; cards
 /// carry no source-lookup logic of their own.
 class HistoryPlaybackService {
-  HistoryPlaybackService(this._pluginsController, this._downloadController);
+  HistoryPlaybackService(this._pluginsController, this._offlinePlaybackReader);
 
   final PluginsController _pluginsController;
-  final DownloadController _downloadController;
+  final OfflinePlaybackReader _offlinePlaybackReader;
 
   /// [cancelToken] lets the caller abort the online lookup, e.g. when the
   /// loading dialog it put up is dismissed.
@@ -95,7 +95,7 @@ class HistoryPlaybackService {
   }
 
   VideoPlaybackArgs? _offlineArgs(History history) {
-    final downloadedEpisodes = _downloadController.getCompletedEpisodes(
+    final downloadedEpisodes = _offlinePlaybackReader.getCompletedEpisodes(
       history.bangumiItem.id,
       history.adapterName,
     );
@@ -121,7 +121,7 @@ class HistoryPlaybackService {
       return null;
     }
 
-    final localPath = _downloadController.getLocalVideoPath(
+    final localPath = _offlinePlaybackReader.getLocalVideoPath(
       history.bangumiItem.id,
       history.adapterName,
       targetEpisode.episodeNumber,

@@ -56,8 +56,25 @@ class _SourceSheetState extends State<SourceSheet> with KazumiDialogOwner {
     final item = widget.infoController.bangumiItem;
     _keyword = item.nameCn.isEmpty ? item.name : item.nameCn;
     _searchService = PluginSearchService(
-      infoController: widget.infoController,
       pluginsController: _pluginsController,
+      onStatusChanged: (pluginName, status) {
+        widget.infoController.pluginSearchStatus[pluginName] = status;
+      },
+      onResponseReceived: (response) {
+        widget.infoController.pluginSearchResponseList.removeWhere(
+          (item) => item.pluginName == response.pluginName,
+        );
+        widget.infoController.pluginSearchResponseList.add(response);
+      },
+      onResultsReset: (pluginName) {
+        widget.infoController.pluginSearchResponseList.removeWhere(
+          (item) => item.pluginName == pluginName,
+        );
+      },
+      onResponsesCleared: () {
+        widget.infoController.pluginSearchResponseList.clear();
+        widget.infoController.pluginSearchStatus.clear();
+      },
     );
     _captchaFlow = _SourceCaptchaFlow(
       onVerified: _showVerifiedResult,

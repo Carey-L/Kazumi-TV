@@ -2,7 +2,7 @@
 
 import 'package:canvas_danmaku/canvas_danmaku.dart' as canvas;
 import 'package:kazumi/modules/danmaku/danmaku_module.dart';
-import 'package:kazumi/pages/download/download_controller.dart';
+import 'package:kazumi/services/download/danmaku_cache_service.dart';
 import 'package:kazumi/request/apis/danmaku_api.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/storage/storage.dart';
@@ -86,11 +86,11 @@ class DanmakuTimeline {
 abstract class _PlayerDanmakuController with Store {
   _PlayerDanmakuController({
     required this.isLocalPlayback,
-    required this.downloadController,
+    required this.danmakuCache,
   });
 
   final bool Function() isLocalPlayback;
-  final DownloadController downloadController;
+  final DanmakuCacheReader danmakuCache;
 
   late canvas.DanmakuController canvasController;
 
@@ -194,7 +194,7 @@ abstract class _PlayerDanmakuController with Store {
         'PlayerController: attempting to load cached danmaku for episode $episode');
     var nextBangumiID = bangumiID;
     try {
-      final cachedDanmakus = await downloadController.getCachedDanmakus(
+      final cachedDanmakus = await danmakuCache.getCachedDanmakus(
         bangumiId,
         pluginName,
         episode,
@@ -218,7 +218,7 @@ abstract class _PlayerDanmakuController with Store {
             if (res.isNotEmpty) {
               KazumiLogger()
                   .i('PlayerController: fetched ${res.length} danmakus online');
-              _saveDanmakuToCache(downloadController, bangumiId, pluginName,
+              _saveDanmakuToCache(danmakuCache, bangumiId, pluginName,
                   episode, res, nextBangumiID);
             }
             return DanmakuLoadResult.success(
@@ -245,14 +245,14 @@ abstract class _PlayerDanmakuController with Store {
   }
 
   void _saveDanmakuToCache(
-      DownloadController downloadController,
+      DanmakuCacheReader danmakuCache,
       int bangumiId,
       String pluginName,
       int episode,
       List<DanmakuEntry> danmakus,
       int danDanID) {
     try {
-      downloadController.updateCachedDanmakus(
+      danmakuCache.updateCachedDanmakus(
         bangumiId,
         pluginName,
         episode,

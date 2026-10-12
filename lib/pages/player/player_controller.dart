@@ -18,7 +18,7 @@ import 'package:kazumi/pages/player/controller/player_screenshot_controller.dart
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/shaders/shader_asset_service.dart';
-import 'package:kazumi/pages/download/download_controller.dart';
+import 'package:kazumi/services/download/danmaku_cache_service.dart';
 import 'package:kazumi/services/player/audio_controller.dart';
 import 'package:kazumi/utils/async_session.dart';
 import 'package:kazumi/utils/device.dart';
@@ -34,12 +34,12 @@ class PlayerController implements Disposable {
 
   PlayerController(
     this.shaderAssetService,
-    DownloadController downloadController,
+    DanmakuCacheReader danmakuCache,
     this.audioController,
   ) {
     danmaku = PlayerDanmakuController(
       isLocalPlayback: () => isLocalPlayback,
-      downloadController: downloadController,
+      danmakuCache: danmakuCache,
     );
   }
 

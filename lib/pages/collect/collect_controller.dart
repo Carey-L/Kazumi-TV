@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
@@ -23,9 +25,17 @@ enum _BangumiDeleteSyncAction {
 class CollectController = _CollectController with _$CollectController;
 
 abstract class _CollectController with Store {
-  _CollectController(this._collectCrudRepository);
+  _CollectController(this._collectCrudRepository) {
+    _changesSubscription = _collectCrudRepository.changes.listen((_) {
+      _refreshTimer?.cancel();
+      _refreshTimer =
+          Timer(const Duration(milliseconds: 250), loadCollectibles);
+    });
+  }
 
   final ICollectCrudRepository _collectCrudRepository;
+  StreamSubscription<void>? _changesSubscription;
+  Timer? _refreshTimer;
 
   @observable
   ObservableList<CollectedBangumi> collectibles =
@@ -34,6 +44,11 @@ abstract class _CollectController with Store {
   void loadCollectibles() {
     collectibles.clear();
     collectibles.addAll(_collectCrudRepository.getAllCollectibles());
+  }
+
+  Future<void> dispose() async {
+    _refreshTimer?.cancel();
+    await _changesSubscription?.cancel();
   }
 
   int getCollectType(BangumiItem bangumiItem) {

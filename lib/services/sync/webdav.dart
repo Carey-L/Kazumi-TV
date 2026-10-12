@@ -213,21 +213,23 @@ class WebDav {
       return;
     }
 
-    List<Future<void>> downloadFutures = [];
+    // WebDAV requests stay strictly serialized by the shared queue above,
+    // so the two box snapshots download one after another.
     if (collectiblesExists) {
-      downloadFutures.add(_downloadBox('collectibles').catchError((e) {
+      try {
+        await _downloadBox('collectibles');
+      } catch (e) {
         KazumiLogger().e('WebDav: download collectibles failed', error: e);
         throw Exception('WebDav: download collectibles failed');
-      }));
+      }
     }
     if (changesExists) {
-      downloadFutures.add(_downloadBox('collectchanges').catchError((e) {
+      try {
+        await _downloadBox('collectchanges');
+      } catch (e) {
         KazumiLogger().e('WebDav: download collectchanges failed', error: e);
         throw Exception('WebDav: download collectchanges failed');
-      }));
-    }
-    if (downloadFutures.isNotEmpty) {
-      await Future.wait(downloadFutures);
+      }
     }
     try {
       if (collectiblesExists) {

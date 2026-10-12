@@ -28,6 +28,7 @@ class InitPage extends StatefulWidget {
     required this.myController,
     required this.downloadController,
     required this.danmakuShieldSync,
+    required this.backgroundDownloadService,
   });
 
   final PluginsController pluginsController;
@@ -36,6 +37,7 @@ class InitPage extends StatefulWidget {
   final MyController myController;
   final DownloadController downloadController;
   final DanmakuShieldSyncService danmakuShieldSync;
+  final BackgroundDownloadService backgroundDownloadService;
 
   @override
   State<InitPage> createState() => _InitPageState();
@@ -95,7 +97,7 @@ class _InitPageState extends State<InitPage> {
   }
 
   void _setupBackgroundDownloadNavigation() {
-    final backgroundService = BackgroundDownloadService();
+    final backgroundService = widget.backgroundDownloadService;
 
     backgroundService.onNavigateToDownloadRequested = () {
       Future.delayed(const Duration(milliseconds: 300), () {

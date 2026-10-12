@@ -1073,6 +1073,7 @@ class PlayerItemState extends State<PlayerItem>
           try {
             playerTimer!.cancel();
           } catch (_) {}
+          unawaited(historyController.flushPending());
           widget.changeEpisode(
             playingSelection.episode + 1,
             currentRoad: playingSelection.road,
@@ -1222,6 +1223,7 @@ class PlayerItemState extends State<PlayerItem>
     WidgetsBinding.instance.removeObserver(this);
     playerController.seeking.invalidateInteractiveSeek();
     playerTimer?.cancel();
+    unawaited(historyController.flushPending());
     hideTimer?.cancel();
     _panelVisibilityController.dispose();
     _screenshotFeedbackController.dispose();
