@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
+import 'package:kazumi/bean/widget/split_list_row.dart';
 import 'package:kazumi/services/network/bangumi_acceleration.dart';
 import 'package:kazumi/services/network/image_acceleration.dart';
 import 'package:kazumi/services/storage/storage.dart';
@@ -96,37 +97,85 @@ class _NetworkMirrorSettingsState extends State<NetworkMirrorSettings> {
     required String Function(T) description,
     required SettingKey<String> setting,
   }) async {
-    final selected = await KazumiDialog.show<T>(
+    await KazumiDialog.show<void>(
       context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(title),
-        children: [
-          RadioGroup<T>(
-            groupValue: current,
-            onChanged: (value) => Navigator.of(context).pop(value),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final mode in modes)
-                  RadioListTile<T>(
-                    value: mode,
-                    title: Text(label(mode)),
-                    subtitle: Text(
-                      description(mode),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
+      builder: (_) => _AccelerationDialog<T>(
+        title: title,
+        value: current,
+        modes: modes,
+        label: label,
+        description: description,
+        onChanged: (value) => _save(setting, value.name),
       ),
     );
-    if (mounted && selected != null && selected != current) {
-      await _save(setting, selected.name);
-    }
   }
+}
+
+class _AccelerationDialog<T extends Enum> extends StatefulWidget {
+  const _AccelerationDialog({
+    required this.title,
+    required this.value,
+    required this.modes,
+    required this.label,
+    required this.description,
+    required this.onChanged,
+  });
+
+  final String title;
+  final T value;
+  final List<T> modes;
+  final String Function(T) label;
+  final String Function(T) description;
+  final Future<void> Function(T) onChanged;
+
+  @override
+  State<_AccelerationDialog<T>> createState() => _AccelerationDialogState<T>();
+}
+
+class _AccelerationDialogState<T extends Enum>
+    extends State<_AccelerationDialog<T>> {
+  late T _value = widget.value;
+  bool _saving = false;
+
+  Future<void> _select(T? value) async {
+    if (value == null || _saving) return;
+    setState(() {
+      _value = value;
+      _saving = true;
+    });
+    await widget.onChanged(value);
+    if (mounted) KazumiDialog.dismiss(context: context);
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(widget.title),
+    scrollable: true,
+    content: SizedBox(
+      width: 360,
+      child: RadioGroup<T>(
+        groupValue: _value,
+        onChanged: _select,
+        child: SplitListGroup(
+          children: [
+            for (final mode in widget.modes)
+              SettingsTile<T>.radioTile(
+                title: Text(widget.label(mode)),
+                description: Text(widget.description(mode)),
+                radioValue: mode,
+                enabled: !_saving,
+              ),
+          ],
+        ),
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: _saving ? null : () => KazumiDialog.dismiss(context: context),
+        child: const Text('取消'),
+      ),
+    ],
+  );
 }
 
 extension on BangumiAcceleration {
