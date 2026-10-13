@@ -49,7 +49,10 @@ class _InfoPageState extends State<InfoPage>
 
   InfoController get infoController => widget.infoController;
   late final TabController infoTabController;
+  final GlobalKey<NestedScrollViewState> _nestedScrollKey = GlobalKey();
+  final ScrollController _outerScrollController = ScrollController();
   late final bool showRating;
+  int _headerRevealRequest = 0;
 
   bool commentsIsLoading = false;
   bool charactersIsLoading = false;
@@ -204,6 +207,52 @@ class _InfoPageState extends State<InfoPage>
     }
   }
 
+  void _showSourceSheet() {
+    showAdaptiveBottomSheet<void>(
+      context: context,
+      maxHeightFactor: 0.88,
+      builder: (context) => SourceSheet(infoController: infoController),
+    );
+  }
+
+  void _revealHeaderWhenTabFocused(bool hasFocus) {
+    if (!hasFocus) return;
+    final request = ++_headerRevealRequest;
+    // Focus descendants can schedule ensureVisible in post-frame callbacks.
+    // Run after the frame has settled so it cannot fight the tab's own scroll.
+    WidgetsBinding.instance.endOfFrame.then((_) {
+      if (!mounted || request != _headerRevealRequest) return;
+      if (!_outerScrollController.hasClients) return;
+      final position = _outerScrollController.position;
+      if (position.pixels > position.minScrollExtent) {
+        _outerScrollController.jumpTo(position.minScrollExtent);
+      }
+    });
+  }
+
+  Future<void> _scrollToTop() async {
+    final inner = _nestedScrollKey.currentState?.innerController;
+    if (inner?.hasClients == true) {
+      final position = inner!.position;
+      if (position.pixels > position.minScrollExtent) {
+        await inner.animateTo(
+          position.minScrollExtent,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    }
+    if (!_outerScrollController.hasClients) return;
+    final position = _outerScrollController.position;
+    if (position.pixels > position.minScrollExtent) {
+      await _outerScrollController.animateTo(
+        position.minScrollExtent,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -275,6 +324,7 @@ class _InfoPageState extends State<InfoPage>
     infoController.clearRelations();
     infoController.pluginSearchResponseList.clear();
     infoTabController.dispose();
+    _outerScrollController.dispose();
     super.dispose();
   }
 
@@ -318,6 +368,8 @@ class _InfoPageState extends State<InfoPage>
     const topOffset = 0.0;
     return Scaffold(
       body: NestedScrollView(
+        key: _nestedScrollKey,
+        controller: _outerScrollController,
         headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
           return <Widget>[
             SliverOverlapAbsorber(
@@ -354,6 +406,13 @@ class _InfoPageState extends State<InfoPage>
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
+                  EmbeddedNativeControlArea(
+                    child: IconButton(
+                      onPressed: _scrollToTop,
+                      tooltip: '回到顶部',
+                      icon: const Icon(Icons.vertical_align_top_rounded),
+                    ),
+                  ),
                   EmbeddedNativeControlArea(
                     child: InfoActionsMenu(
                       bangumiItem: infoController.bangumiItem,
@@ -408,6 +467,7 @@ class _InfoPageState extends State<InfoPage>
                                     bangumiItem: infoController.bangumiItem,
                                     isLoading: showBangumiInfoSkeleton,
                                     showRating: showRating,
+                                    onStartWatching: _showSourceSheet,
                                   ),
                                 ),
                               ),
@@ -419,12 +479,18 @@ class _InfoPageState extends State<InfoPage>
                   ),
                 ),
                 forceElevated: innerBoxIsScrolled,
-                bottom: TabBar(
-                  controller: infoTabController,
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.center,
-                  dividerHeight: 0,
-                  tabs: _infoTabs.map((name) => Tab(text: name)).toList(),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(kTextTabBarHeight),
+                  child: Focus(
+                    onFocusChange: _revealHeaderWhenTabFocused,
+                    child: TabBar(
+                      controller: infoTabController,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.center,
+                      dividerHeight: 0,
+                      tabs: _infoTabs.map((name) => Tab(text: name)).toList(),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -459,20 +525,6 @@ class _InfoPageState extends State<InfoPage>
             );
           },
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        tooltip: '开始观看',
-        onPressed: () {
-          showAdaptiveBottomSheet<void>(
-            context: context,
-            maxHeightFactor: 0.88,
-            builder: (context) {
-              return SourceSheet(infoController: infoController);
-            },
-          );
-        },
-        label: const Text('开始观看'),
-        icon: const Icon(Icons.play_arrow_rounded),
       ),
     );
   }
