@@ -503,9 +503,9 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
           tooltip: playerController.danmaku.danmakuOn ? '关闭弹幕' : '打开弹幕',
         ),
         if (playerController.danmaku.danmakuOn) _danmakuSettingsButton,
-        // Spacer keeps the transport controls left-aligned while danmaku is
-        // off; the composer itself sits last so it cannot trap the D-pad.
-        if (!playerController.danmaku.danmakuOn) const Spacer(),
+        // Keep the danmaku controls on the left and the playback menus on
+        // the right, regardless of whether the settings button is visible.
+        const Spacer(),
       ],
       _menuButton(
         focusNode: _speedFocus,

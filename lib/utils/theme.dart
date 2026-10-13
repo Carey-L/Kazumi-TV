@@ -12,6 +12,32 @@ const double kGlobalTextScale = 1.5;
 /// primary so a custom palette still tints the ring.
 const Color kTvFocusBorderColor = Colors.green;
 
+TextStyle? _scaleTextStyle(TextStyle? style) {
+  final fontSize = style?.fontSize;
+  if (style == null || fontSize == null) return style;
+  return style.copyWith(fontSize: fontSize * kGlobalTextScale);
+}
+
+TextTheme _scaleTextTheme(TextTheme textTheme) {
+  return textTheme.copyWith(
+    displayLarge: _scaleTextStyle(textTheme.displayLarge),
+    displayMedium: _scaleTextStyle(textTheme.displayMedium),
+    displaySmall: _scaleTextStyle(textTheme.displaySmall),
+    headlineLarge: _scaleTextStyle(textTheme.headlineLarge),
+    headlineMedium: _scaleTextStyle(textTheme.headlineMedium),
+    headlineSmall: _scaleTextStyle(textTheme.headlineSmall),
+    titleLarge: _scaleTextStyle(textTheme.titleLarge),
+    titleMedium: _scaleTextStyle(textTheme.titleMedium),
+    titleSmall: _scaleTextStyle(textTheme.titleSmall),
+    bodyLarge: _scaleTextStyle(textTheme.bodyLarge),
+    bodyMedium: _scaleTextStyle(textTheme.bodyMedium),
+    bodySmall: _scaleTextStyle(textTheme.bodySmall),
+    labelLarge: _scaleTextStyle(textTheme.labelLarge),
+    labelMedium: _scaleTextStyle(textTheme.labelMedium),
+    labelSmall: _scaleTextStyle(textTheme.labelSmall),
+  );
+}
+
 ThemeData buildKazumiTheme({
   required Brightness brightness,
   String? fontFamily,
@@ -30,10 +56,8 @@ ThemeData buildKazumiTheme({
   );
 
   final scaled = base.copyWith(
-    textTheme: base.textTheme.apply(fontSizeFactor: kGlobalTextScale),
-    primaryTextTheme: base.primaryTextTheme.apply(
-      fontSizeFactor: kGlobalTextScale,
-    ),
+    textTheme: _scaleTextTheme(base.textTheme),
+    primaryTextTheme: _scaleTextTheme(base.primaryTextTheme),
   );
 
   if (!isTvBuild) return scaled;
