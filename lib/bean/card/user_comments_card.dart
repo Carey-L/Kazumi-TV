@@ -231,7 +231,7 @@ class UserCommentsCardBone extends StatelessWidget {
                 children: [
                   Bone.text(width: 96),
                   SizedBox(height: 2),
-                  Bone.text(width: 64, fontSize: 11),
+                  Bone.text(width: 64, fontSize: 17),
                 ],
               ),
             ]),

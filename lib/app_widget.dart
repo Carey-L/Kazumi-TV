@@ -9,7 +9,6 @@ import 'package:kazumi/services/logging/logger.dart';
 import 'package:kazumi/services/network/metered_network_service.dart';
 import 'package:kazumi/bean/settings/theme_provider.dart';
 import 'package:kazumi/navigation.dart';
-import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/utils/theme.dart';
 import 'package:kazumi/utils/platform_variant.dart';
 import 'package:kazumi/bean/widget/tv_focus_scope.dart';
@@ -120,23 +119,11 @@ class _AppWidgetState extends State<AppWidget> with WidgetsBindingObserver {
     Color? color,
     ColorScheme? colorScheme,
   }) {
-    final theme = ThemeData(
-      useMaterial3: true,
-      fontFamily: fontFamily,
+    return buildKazumiTheme(
       brightness: brightness,
-      colorSchemeSeed: color,
+      fontFamily: fontFamily,
+      color: color,
       colorScheme: colorScheme,
-      progressIndicatorTheme: progressIndicatorTheme2024,
-      sliderTheme: sliderTheme2024,
-      pageTransitionsTheme: pageTransitionsTheme2024,
-    );
-    if (!isTvBuild) return theme;
-
-    return theme.copyWith(
-      focusColor: Colors.white.withValues(alpha: 0.32),
-      hoverColor: Colors.white.withValues(alpha: 0.16),
-      materialTapTargetSize: MaterialTapTargetSize.padded,
-      visualDensity: const VisualDensity(horizontal: 1, vertical: 1),
     );
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/tv_focus_highlight.dart';
-import 'package:kazumi/utils/platform_variant.dart';
 
 class RulePageIntro extends StatelessWidget {
   const RulePageIntro({
@@ -22,47 +21,44 @@ class RulePageIntro extends StatelessWidget {
     final colors = theme.colorScheme;
     return TvFocusHighlight(
       borderRadius: BorderRadius.circular(32),
-      child: Focus(
-        canRequestFocus: isTvBuild,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: colors.primaryContainer,
-            borderRadius: BorderRadius.circular(32),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: colors.onPrimaryContainer,
-                      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: colors.primaryContainer,
+          borderRadius: BorderRadius.circular(32),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colors.onPrimaryContainer,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Icon(icon, size: 32, color: colors.onPrimaryContainer),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.onPrimaryContainer,
                 ),
-              ),
-              if (actions.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                Wrap(spacing: 8, runSpacing: 8, children: actions),
+                const SizedBox(width: 16),
+                Icon(icon, size: 32, color: colors.onPrimaryContainer),
               ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              description,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.onPrimaryContainer,
+              ),
+            ),
+            if (actions.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Wrap(spacing: 8, runSpacing: 8, children: actions),
             ],
-          ),
+          ],
         ),
       ),
     );

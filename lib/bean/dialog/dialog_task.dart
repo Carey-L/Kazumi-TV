@@ -227,7 +227,7 @@ class _LoadingDialog extends StatelessWidget {
                 const LoadingIndicator(),
                 const SizedBox(height: 16),
                 Text(message ?? 'Loading...',
-                    style: const TextStyle(fontSize: 16)),
+                    style: const TextStyle(fontSize: 24)),
               ],
             ),
           ),

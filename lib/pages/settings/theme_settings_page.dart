@@ -2,14 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/card/palette_card.dart';
-import 'package:kazumi/utils/constants.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/theme_provider.dart';
 import 'package:kazumi/bean/settings/color_type.dart';
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
-import 'package:kazumi/bean/settings/settings_dropdown_tile.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
+import 'package:kazumi/bean/widget/split_list_row.dart';
 import 'package:kazumi/utils/device.dart';
 import 'package:kazumi/utils/theme.dart';
 
@@ -21,7 +20,7 @@ class ThemeSettingsPage extends StatefulWidget {
 }
 
 class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
-  late dynamic defaultThemeMode;
+  late String defaultThemeMode;
   late dynamic defaultThemeColor;
   late bool oledEnhance;
   late bool useDynamicColor;
@@ -42,24 +41,16 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
   }
 
   void setTheme(Color? color) {
-    var defaultDarkTheme = ThemeData(
-        useMaterial3: true,
-        fontFamily: themeProvider.currentFontFamily,
+    var defaultDarkTheme = buildKazumiTheme(
         brightness: Brightness.dark,
-        colorSchemeSeed: color,
-        progressIndicatorTheme: progressIndicatorTheme2024,
-        sliderTheme: sliderTheme2024,
-        pageTransitionsTheme: pageTransitionsTheme2024);
+        fontFamily: themeProvider.currentFontFamily,
+        color: color);
     var oledTheme = oledDarkTheme(defaultDarkTheme);
     themeProvider.setTheme(
-      ThemeData(
-          useMaterial3: true,
-          fontFamily: themeProvider.currentFontFamily,
+      buildKazumiTheme(
           brightness: Brightness.light,
-          colorSchemeSeed: color,
-          progressIndicatorTheme: progressIndicatorTheme2024,
-          sliderTheme: sliderTheme2024,
-          pageTransitionsTheme: pageTransitionsTheme2024),
+          fontFamily: themeProvider.currentFontFamily,
+          color: color),
       oledEnhance ? oledTheme : defaultDarkTheme,
     );
     defaultThemeColor = color?.toARGB32().toRadixString(16) ?? 'default';
@@ -67,31 +58,23 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
   }
 
   void resetTheme() {
-    var defaultDarkTheme = ThemeData(
-        useMaterial3: true,
-        fontFamily: themeProvider.currentFontFamily,
+    var defaultDarkTheme = buildKazumiTheme(
         brightness: Brightness.dark,
-        colorSchemeSeed: Colors.green,
-        progressIndicatorTheme: progressIndicatorTheme2024,
-        sliderTheme: sliderTheme2024,
-        pageTransitionsTheme: pageTransitionsTheme2024);
+        fontFamily: themeProvider.currentFontFamily,
+        color: Colors.green);
     var oledTheme = oledDarkTheme(defaultDarkTheme);
     themeProvider.setTheme(
-      ThemeData(
-          useMaterial3: true,
-          fontFamily: themeProvider.currentFontFamily,
+      buildKazumiTheme(
           brightness: Brightness.light,
-          colorSchemeSeed: Colors.green,
-          progressIndicatorTheme: progressIndicatorTheme2024,
-          sliderTheme: sliderTheme2024,
-          pageTransitionsTheme: pageTransitionsTheme2024),
+          fontFamily: themeProvider.currentFontFamily,
+          color: Colors.green),
       oledEnhance ? oledTheme : defaultDarkTheme,
     );
     defaultThemeColor = 'default';
     GStorage.putSetting(SettingsKeys.themeColor, 'default');
   }
 
-  void updateTheme(String theme) async {
+  Future<void> updateTheme(String theme) async {
     if (theme == 'dark') {
       themeProvider.setThemeMode(ThemeMode.dark);
     }
@@ -127,13 +110,17 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
           SettingsSection(
             title: Text('外观'),
             tiles: [
-              SettingsDropdownTile<String>(
+              SettingsTile(
                 leading: Icons.dark_mode_rounded,
                 title: const Text('深色模式'),
-                value: defaultThemeMode,
-                fallbackLabel: '跟随系统',
-                options: const {'system': '跟随系统', 'light': '浅色', 'dark': '深色'},
-                onChanged: updateTheme,
+                value: Text(themeModeLabel(defaultThemeMode)),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onPressed: (_) => KazumiDialog.show<void>(
+                  builder: (_) => _ThemeModeDialog(
+                    value: defaultThemeMode,
+                    onChanged: updateTheme,
+                  ),
+                ),
               ),
               SettingsTile(
                 leading: Icons.palette_rounded,
@@ -255,6 +242,75 @@ class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
             ),
         ],
       ),
+    );
+  }
+}
+
+String themeModeLabel(String mode) => switch (mode) {
+      'light' => '浅色',
+      'dark' => '深色',
+      _ => '跟随系统',
+    };
+
+class _ThemeModeDialog extends StatefulWidget {
+  const _ThemeModeDialog({required this.value, required this.onChanged});
+
+  final String value;
+  final Future<void> Function(String) onChanged;
+
+  @override
+  State<_ThemeModeDialog> createState() => _ThemeModeDialogState();
+}
+
+class _ThemeModeDialogState extends State<_ThemeModeDialog> {
+  static const _options = [
+    ('system', '跟随系统'),
+    ('light', '浅色'),
+    ('dark', '深色'),
+  ];
+
+  late String _value = widget.value;
+  bool _saving = false;
+
+  Future<void> _select(String? mode) async {
+    if (mode == null || _saving) return;
+    setState(() {
+      _value = mode;
+      _saving = true;
+    });
+    await widget.onChanged(mode);
+    if (!mounted) return;
+    KazumiDialog.dismiss(context: context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('深色模式'),
+      scrollable: true,
+      content: SizedBox(
+        width: 360,
+        child: RadioGroup<String>(
+          groupValue: _value,
+          onChanged: _select,
+          child: SplitListGroup(
+            children: [
+              for (final option in _options)
+                SettingsTile<String>.radioTile(
+                  title: Text(option.$2),
+                  radioValue: option.$1,
+                  enabled: !_saving,
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => KazumiDialog.dismiss(context: context),
+          child: const Text('取消'),
+        ),
+      ],
     );
   }
 }

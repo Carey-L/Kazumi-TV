@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
-import 'package:kazumi/bean/widget/kazumi_menu.dart';
+import 'package:kazumi/bean/widget/split_list_row.dart';
 
-class SettingsDropdownTile<T> extends StatefulWidget {
+/// A settings row that opens a single-choice dialog.
+///
+/// The dialog is pushed through [KazumiDialog] so the remote/back key closes
+/// it without leaving the settings page.
+class SettingsDropdownTile<T> extends StatelessWidget {
   const SettingsDropdownTile({
     super.key,
     required this.title,
@@ -27,42 +32,75 @@ class SettingsDropdownTile<T> extends StatefulWidget {
   final bool enabled;
 
   @override
-  State<SettingsDropdownTile<T>> createState() =>
-      _SettingsDropdownTileState<T>();
+  Widget build(BuildContext context) {
+    final canOpen = enabled && options.isNotEmpty;
+    return SettingsTile(
+      leading: leading,
+      title: title,
+      description: description,
+      enabled: canOpen,
+      onPressed: (context) => KazumiDialog.show<void>(
+        builder: (_) => _SettingsDropdownDialog<T>(
+          title: title,
+          value: value,
+          options: options,
+          icons: icons,
+          onChanged: onChanged,
+        ),
+      ),
+      value: Text(options[value] ?? fallbackLabel),
+      trailing: const Icon(Icons.chevron_right_rounded),
+    );
+  }
 }
 
-class _SettingsDropdownTileState<T> extends State<SettingsDropdownTile<T>> {
-  final _controller = MenuController();
+class _SettingsDropdownDialog<T> extends StatelessWidget {
+  const _SettingsDropdownDialog({
+    required this.title,
+    required this.value,
+    required this.options,
+    required this.icons,
+    required this.onChanged,
+  });
+
+  final Widget title;
+  final T value;
+  final Map<T, String> options;
+  final Map<T, IconData> icons;
+  final ValueChanged<T> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final enabled = widget.enabled && widget.options.isNotEmpty;
-    return SettingsTile(
-      leading: widget.leading,
-      title: widget.title,
-      description: widget.description,
-      enabled: enabled,
-      onPressed: (_) =>
-          _controller.isOpen ? _controller.close() : _controller.open(),
-      value: KazumiMenuButton(
-        controller: _controller,
-        enabled: enabled,
-        builder: (_, _) =>
-            Text(widget.options[widget.value] ?? widget.fallbackLabel),
-        menuChildren: [
-          for (final entry in widget.options.entries)
-            KazumiMenuItem(
-              label: entry.value,
-              selected: entry.key == widget.value,
-              leadingIcon: widget.icons[entry.key] == null
-                  ? null
-                  : Icon(widget.icons[entry.key]),
-              requestFocusOnHover: false,
-              onPressed: enabled ? () => widget.onChanged(entry.key) : null,
-            ),
-        ],
+    return AlertDialog(
+      title: title,
+      scrollable: true,
+      content: SizedBox(
+        width: 360,
+        child: RadioGroup<T>(
+          groupValue: value,
+          onChanged: (selected) {
+            if (selected == null) return;
+            onChanged(selected);
+            KazumiDialog.dismiss(context: context);
+          },
+          child: SplitListGroup(
+            children: [
+              for (final entry in options.entries)
+                SettingsTile<T>.radioTile(
+                  title: Text(entry.value),
+                  leading: icons[entry.key],
+                  radioValue: entry.key,
+                ),
+            ],
+          ),
+        ),
       ),
-      trailing: const Icon(Icons.arrow_drop_down_rounded),
+      actions: [
+        TextButton(
+          onPressed: () => KazumiDialog.dismiss(context: context),
+          child: const Text('取消'),
+        ),
+      ],
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/navigation.dart';
 import 'package:kazumi/pages/menu/route_visibility.dart';
 import 'package:kazumi/pages/router.dart';
+import 'package:kazumi/utils/focus.dart';
 import 'package:kazumi/utils/platform_variant.dart';
 import 'package:kazumi/bean/widget/tv_traversal_scope.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
@@ -84,6 +85,9 @@ class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
   }
 
   void _handleSystemBack(BuildContext context) {
+    // First back press drops the keyboard/caret when a field is being edited.
+    if (unfocusTextInputOnBack()) return;
+
     if (dismissAllOpenMenus()) {
       _lastExitPromptAt = null;
       return;
@@ -262,6 +266,13 @@ class _ScaffoldMenu extends State<ScaffoldMenu> with RouteAware {
             child: EmbeddedNativeControlArea(
               child: NavigationRail(
                 backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                minWidth: 96,
+                useIndicator: true,
+                indicatorShape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(22)),
+                ),
+                selectedIconTheme: const IconThemeData(size: 30),
+                unselectedIconTheme: const IconThemeData(size: 28),
                 groupAlignment: 1,
                 leading: FloatingActionButton(
                   focusNode: _railEntryFocus,

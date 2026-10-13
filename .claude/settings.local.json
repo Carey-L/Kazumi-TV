@@ -116,7 +116,9 @@
       "Bash(command -v dart)",
       "Bash(/mnt/d/flutter/bin/flutter format *)",
       "Bash(/mnt/d/flutter/bin/flutter analyze *)",
-      "Bash(/mnt/c/Windows/System32/cmd.exe *)"
+      "Bash(/mnt/c/Windows/System32/cmd.exe *)",
+      "Bash(awk NR>=440 && NR<=470 {printf \"%d\\\\t%s\\\\n\", NR, $0} *)",
+      "Bash(awk NR>=470 && NR<=485 {printf \"%d\\\\t%s\\\\n\", NR, $0} *)"
     ]
   }
 }

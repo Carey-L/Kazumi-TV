@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
 import 'package:kazumi/bean/widget/tv_focus_highlight.dart';
+import 'package:kazumi/bean/widget/tv_text_field.dart';
 import 'package:kazumi/modules/history/history_module.dart';
 import 'package:kazumi/pages/history/history_list_query.dart';
 
@@ -132,7 +133,7 @@ class _HistoryListViewState extends State<HistoryListView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            TextField(
+                            TvTextField(
                               controller: _searchController,
                               focusNode: _searchFocus,
                               textInputAction: TextInputAction.search,

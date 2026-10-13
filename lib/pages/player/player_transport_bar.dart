@@ -56,11 +56,11 @@ class PlayerTransportBar extends StatelessWidget {
           children: [
             if (timePlacement == PlayerTimeLabelPlacement.aboveProgress)
               Padding(
-                padding: const EdgeInsets.only(left: 10, bottom: 10),
+                padding: const EdgeInsets.only(left: 20, bottom: 20),
                 child: timeLabel,
               ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: progressBuilder(
                 timePlacement == PlayerTimeLabelPlacement.besideProgress
                     ? TimeLabelLocation.sides
@@ -68,21 +68,21 @@ class PlayerTransportBar extends StatelessWidget {
               ),
             ),
             Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(children: [
                   playPause,
                   nextEpisode,
                   if (timePlacement ==
                       PlayerTimeLabelPlacement.afterPlaybackButtons)
                     Padding(
-                        padding: const EdgeInsets.only(left: 10),
+                        padding: const EdgeInsets.only(left: 20),
                         child: timeLabel),
                   Expanded(child: controls),
                   fullscreen,
                   ?trailing,
                 ])),
             if (timePlacement != PlayerTimeLabelPlacement.aboveProgress)
-              const SizedBox(height: 6),
+              const SizedBox(height: 12),
           ],
         );
 }

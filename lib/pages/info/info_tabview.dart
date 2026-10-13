@@ -86,7 +86,7 @@ class _InfoTabViewState extends State<InfoTabView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('简介', style: TextStyle(fontSize: 18)),
+              Text('简介', style: TextStyle(fontSize: 27)),
               const SizedBox(height: 8),
               LayoutBuilder(builder: (context, constraints) {
                 final span = TextSpan(text: widget.bangumiItem.summary);
@@ -133,7 +133,7 @@ class _InfoTabViewState extends State<InfoTabView> {
                 }
               }),
               const SizedBox(height: 16),
-              Text('标签', style: TextStyle(fontSize: 18)),
+              Text('标签', style: TextStyle(fontSize: 27)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8.0,
@@ -289,11 +289,11 @@ class _InfoTabViewState extends State<InfoTabView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Skeletonizer.zone(child: Bone.text(fontSize: 18, width: 50)),
+              Skeletonizer.zone(child: Bone.text(fontSize: 27, width: 50)),
               const SizedBox(height: 8),
               Skeletonizer.zone(child: Bone.multiText(lines: 7)),
               const SizedBox(height: 16),
-              Skeletonizer.zone(child: Bone.text(fontSize: 18, width: 50)),
+              Skeletonizer.zone(child: Bone.text(fontSize: 27, width: 50)),
               const SizedBox(height: 8),
               if (widget.isLoading)
                 Skeletonizer.zone(

@@ -88,7 +88,7 @@ class CommentsCard extends StatelessWidget {
                                 child: Text(
                                   '我的吐槽',
                                   style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 18,
                                       color: Theme.of(context)
                                           .colorScheme
                                           .primaryContainer),

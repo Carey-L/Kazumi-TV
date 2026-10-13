@@ -2,20 +2,16 @@ import 'package:kazumi/bean/widget/embedded_native_control_area.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:canvas_danmaku/models/danmaku_content_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:mobx/mobx.dart' as mobx;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kazumi/bean/widget/kazumi_menu.dart';
-import 'package:kazumi/bean/widget/play_pause_icon.dart';
 import 'package:kazumi/pages/player/player_adjustment_hud.dart';
-import 'package:kazumi/pages/player/danmaku_destination_sheet.dart';
 import 'package:kazumi/pages/player/controller/player_aspect_ratio.dart';
 import 'package:kazumi/pages/player/controller/player_super_resolution.dart';
 import 'package:kazumi/pages/player/player_panel_hold.dart';
 import 'package:kazumi/pages/video/video_controller.dart';
-import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/bean/appbar/drag_to_move_bar.dart' as dtb;
@@ -94,13 +90,7 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
   late final VideoPageController videoPageController =
       widget.videoPageController;
   late final PlayerController playerController;
-  final TextEditingController textController = TextEditingController();
-  final FocusNode textFieldFocus = FocusNode();
   final FocusNode _progressFocus = FocusNode(debugLabel: 'PlayerProgressBar');
-  late final FocusNode _playPauseFocus = FocusNode(
-    debugLabel: 'PlayerPlayPause',
-    onKeyEvent: _handlePlayPauseKey,
-  );
   late final FocusNode _nextEpisodeFocus = FocusNode(
     debugLabel: 'PlayerNextEpisode',
     onKeyEvent: _handleNextEpisodeKey,
@@ -109,9 +99,17 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
     debugLabel: 'PlayerDanmakuToggle',
     onKeyEvent: _handleDanmakuToggleKey,
   );
-  late final FocusNode _superResolutionFocus = FocusNode(
-    debugLabel: 'PlayerSuperResolution',
-    onKeyEvent: _handleSuperResolutionKey,
+  late final FocusNode _danmakuSettingsFocus = FocusNode(
+    debugLabel: 'PlayerDanmakuSettings',
+    onKeyEvent: _handleDanmakuSettingsKey,
+  );
+  late final FocusNode _speedFocus = FocusNode(
+    debugLabel: 'PlayerSpeed',
+    onKeyEvent: _handleSpeedKey,
+  );
+  late final FocusNode _aspectRatioFocus = FocusNode(
+    debugLabel: 'PlayerAspectRatio',
+    onKeyEvent: _handleAspectRatioKey,
   );
   late final mobx.ReactionDisposer _panelRevealReaction;
 
@@ -127,8 +125,8 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
     _ => false,
   };
 
-  static const double _danmakuIconSize = 24.0;
-  static const double _loadingIndicatorStrokeWidth = 2.0;
+  static const double _danmakuIconSize = 48.0;
+  static const double _loadingIndicatorStrokeWidth = 3.0;
 
   bool get isProgressFocused => _progressFocus.hasFocus;
 
@@ -137,145 +135,13 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
   @override
   void dispose() {
     _panelRevealReaction();
-    textController.dispose();
-    textFieldFocus.dispose();
     _progressFocus.dispose();
-    _playPauseFocus.dispose();
     _nextEpisodeFocus.dispose();
     _danmakuToggleFocus.dispose();
-    _superResolutionFocus.dispose();
+    _danmakuSettingsFocus.dispose();
+    _speedFocus.dispose();
+    _aspectRatioFocus.dispose();
     super.dispose();
-  }
-
-  Future<void> _submitDanmakuText(String message) async {
-    textFieldFocus.unfocus();
-
-    if (message.trim().isEmpty) {
-      KazumiDialog.showToast(message: '弹幕内容为空');
-      return;
-    }
-
-    final destination = await showDanmakuDestinationSheet(context);
-    if (!mounted || destination == null) {
-      return;
-    }
-
-    widget.keyboardFocus.requestFocus();
-    if (playerController.danmaku.danDanmakus.isEmpty) {
-      KazumiDialog.showToast(message: '当前剧集不支持弹幕发送的说');
-      return;
-    }
-    if (message.length > 100) {
-      KazumiDialog.showToast(message: '弹幕内容过长');
-      return;
-    }
-
-    if (destination == DanmakuDestination.chatRoom) {
-      if (playerController.syncplay.syncplayRoom.isEmpty) {
-        KazumiDialog.showToast(message: '你还没有加入一起看，无法发送聊天室弹幕');
-        return;
-      }
-
-      final sender =
-          playerController.syncplay.syncplayController?.username ?? '我';
-      playerController.danmaku.canvasController.addDanmaku(
-        DanmakuContentItem(
-          '$sender：$message',
-          color: Colors.orange,
-          isColorful: true,
-          type: DanmakuItemType.bottom,
-          extra: DateTime.now().millisecondsSinceEpoch,
-        ),
-      );
-      unawaited(playerController.sendSyncPlayChatMessage(message));
-    } else {
-      // This provider has no send API; display a local echo.
-      playerController.danmaku.canvasController.addDanmaku(
-        DanmakuContentItem(message, selfSend: true),
-      );
-    }
-    textController.clear();
-  }
-
-  Widget get _danmakuTextField {
-    return Observer(
-      builder: (context) {
-        return PlayerPanelHoldFocusRegion(
-          acquirePlayerPanelHold: widget.acquirePlayerPanelHold,
-          child: Container(
-            constraints: _desktop
-                ? const BoxConstraints(maxWidth: 500, maxHeight: 33)
-                : const BoxConstraints(maxHeight: 33),
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: TextField(
-              focusNode: textFieldFocus,
-              style: TextStyle(
-                fontSize: _desktop ? 15 : 13,
-                color: Colors.white,
-              ),
-              controller: textController,
-              textAlignVertical: TextAlignVertical.center,
-              decoration: InputDecoration(
-                enabled: playerController.danmaku.danmakuOn,
-                filled: true,
-                fillColor: Colors.white38,
-                floatingLabelBehavior: FloatingLabelBehavior.never,
-                hintText: playerController.danmaku.danmakuOn
-                    ? '发个友善的弹幕见证当下'
-                    : '已关闭弹幕',
-                hintStyle: TextStyle(
-                  fontSize: _desktop ? 15 : 13,
-                  color: Colors.white60,
-                ),
-                alignLabelWithHint: true,
-                contentPadding: EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: _desktop ? 8 : 12,
-                ),
-                border: OutlineInputBorder(
-                  borderSide: BorderSide.none,
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(_desktop ? 8 : 20),
-                  ),
-                ),
-                suffixIconConstraints: const BoxConstraints(minWidth: 0),
-                suffixIcon: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        unawaited(_submitDanmakuText(textController.text));
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: playerController.danmaku.danmakuOn
-                            ? Theme.of(context).colorScheme.onPrimaryContainer
-                            : Colors.white60,
-                        backgroundColor: playerController.danmaku.danmakuOn
-                            ? Theme.of(context).colorScheme.primaryContainer
-                            : Theme.of(context).disabledColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            _desktop ? 8 : 20,
-                          ),
-                        ),
-                      ),
-                      child: const Text('发送'),
-                    ),
-                  ],
-                ),
-              ),
-              onSubmitted: (msg) {
-                unawaited(_submitDanmakuText(msg));
-              },
-              onTapOutside: (_) {
-                textFieldFocus.unfocus();
-                widget.keyboardFocus.requestFocus();
-              },
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -375,8 +241,13 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) => _buildPanel(
-      constraints.maxWidth < MediaQuery.textScalerOf(context).scale(600),
+    builder: (context, constraints) => IconTheme(
+      // Doubles every control glyph at once; individual IconButtons keep their
+      // default sizing.
+      data: IconTheme.of(context).copyWith(size: 48),
+      child: _buildPanel(
+        constraints.maxWidth < MediaQuery.textScalerOf(context).scale(600),
+      ),
     ),
   );
 
@@ -389,7 +260,7 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
           left: 0,
           right: 0,
           child: _buildScrim(
-            height: 50,
+            height: 100,
             colors: const [Colors.black45, Colors.transparent],
             offset: _topOffsetAnimation,
           ),
@@ -399,7 +270,7 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
           left: 0,
           right: 0,
           child: _buildScrim(
-            height: 100,
+            height: 200,
             colors: const [Colors.transparent, Colors.black45],
             offset: _bottomOffsetAnimation,
           ),
@@ -579,13 +450,6 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
     onSelected: widget.setPlaybackSpeed,
   );
 
-  List<Widget> get _superResolutionItems => _choiceItems(
-    SuperResolutionMode.values,
-    label: (value) => value.label,
-    selected: (value) => value == playerController.playback.superResolutionMode,
-    onSelected: widget.handleSuperResolutionChange,
-  );
-
   Widget _menuButton({
     required Widget child,
     required List<Widget> items,
@@ -606,6 +470,7 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
   );
 
   Widget get _danmakuSettingsButton => IconButton(
+    focusNode: _danmakuSettingsFocus,
     onPressed: _showDanmakuSettings,
     color: Colors.white,
     icon: _cachedDanmakuSettingsIcon,
@@ -616,11 +481,7 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
     builder: (context, constraints) => Center(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildDanmakuToggleButton(context),
-          _danmakuSettingsButton,
-          if (constraints.maxWidth > 600) _danmakuTextField,
-        ],
+        children: [_buildDanmakuToggleButton(context), _danmakuSettingsButton],
       ),
     ),
   );
@@ -647,20 +508,17 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
         if (!playerController.danmaku.danmakuOn) const Spacer(),
       ],
       _menuButton(
-        focusNode: _superResolutionFocus,
-        child: const Text('超分辨率', style: TextStyle(color: Colors.white)),
-        items: _superResolutionItems,
-      ),
-      _menuButton(
+        focusNode: _speedFocus,
         child: Text(
           playerController.playback.playerSpeed == 1
               ? '倍速'
               : '${playerController.playback.playerSpeed}x',
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white, fontSize: 28),
         ),
         items: _speedItems,
       ),
       _menuButton(
+        focusNode: _aspectRatioFocus,
         child: const Icon(Icons.aspect_ratio_rounded, color: Colors.white),
         tooltip: '视频比例',
         items: _aspectRatioItems,
@@ -672,11 +530,6 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
           tooltip: '选集面板',
           onPressed: widget.onToggleSidePanel,
         ),
-      // The composer is last on purpose: a focused text field swallows
-      // left/right to move its caret, so anything to its right would be
-      // unreachable with a remote.
-      if (!_desktop && playerController.danmaku.danmakuOn)
-        Expanded(child: _danmakuTextField),
     ],
   );
 
@@ -698,15 +551,9 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
           MediaQuery.sizeOf(context),
           desktop: _desktop,
         ),
-        playPause: IconButton(
-          focusNode: _playPauseFocus,
-          tooltip: playerController.playback.playing ? '暂停' : '播放',
-          onPressed: () => playerController.playOrPause(),
-          icon: PlayPauseIcon(
-            iconColor: Colors.white,
-            playing: playerController.playback.playing,
-          ),
-        ),
+        // The play/pause control is intentionally omitted; the remote's center
+        // key toggles playback.
+        playPause: const SizedBox.shrink(),
         nextEpisode: IconButton(
           focusNode: _nextEpisodeFocus,
           color: Colors.white,
@@ -723,12 +570,12 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
             onKeyEvent: _handleProgressKey,
             autofocus: false,
             child: ProgressBar(
-              thumbRadius: 8,
-              thumbGlowRadius: 18,
+              thumbRadius: 16,
+              thumbGlowRadius: 36,
               timeLabelLocation: location,
               timeLabelTextStyle: const TextStyle(
                 color: Colors.white,
-                fontSize: 12,
+                fontSize: 18,
                 fontFeatures: [FontFeature.tabularFigures()],
               ),
               progress: playerController.playback.currentPosition,
@@ -746,7 +593,7 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
             '${compact ? '    ' : ''}${durationToString(playerController.playback.currentPosition)} / ${durationToString(playerController.playback.duration)}',
             style: TextStyle(
               color: Colors.white,
-              fontSize: !compact && _desktop ? 16 : 12,
+              fontSize: !compact && _desktop ? 24 : 18,
               fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
@@ -763,27 +610,14 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
         event.logicalKey != LogicalKeyboardKey.arrowDown) {
       return KeyEventResult.ignored;
     }
-    _playPauseFocus.requestFocus();
+    _nextEpisodeFocus.requestFocus();
     return KeyEventResult.handled;
-  }
-
-  KeyEventResult _handlePlayPauseKey(FocusNode _, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
-    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-      _progressFocus.requestFocus();
-      return KeyEventResult.handled;
-    }
-    if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-      _nextEpisodeFocus.requestFocus();
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
   }
 
   KeyEventResult _handleNextEpisodeKey(FocusNode _, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-      _playPauseFocus.requestFocus();
+      _progressFocus.requestFocus();
       return KeyEventResult.handled;
     }
     if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
@@ -801,16 +635,46 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
     }
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.arrowRight) {
-      _superResolutionFocus.requestFocus();
+      (playerController.danmaku.danmakuOn ? _danmakuSettingsFocus : _speedFocus)
+          .requestFocus();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
   }
 
-  KeyEventResult _handleSuperResolutionKey(FocusNode _, KeyEvent event) {
-    if (event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+  KeyEventResult _handleDanmakuSettingsKey(FocusNode _, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
       _danmakuToggleFocus.requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      _speedFocus.requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  KeyEventResult _handleSpeedKey(FocusNode _, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      (playerController.danmaku.danmakuOn
+              ? _danmakuSettingsFocus
+              : _danmakuToggleFocus)
+          .requestFocus();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      _aspectRatioFocus.requestFocus();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  KeyEventResult _handleAspectRatioKey(FocusNode _, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      _speedFocus.requestFocus();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -866,9 +730,12 @@ class PlayerItemPanelState extends State<PlayerItemPanel> {
                           ' ${videoPageController.title} [${videoPageController.roadList[videoPageController.selectedEpisode.road].identifier[videoPageController.selectedEpisode.episode - 1]}]',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: Theme.of(
-                              context,
-                            ).textTheme.titleMedium!.fontSize,
+                            fontSize:
+                                (Theme.of(
+                                      context,
+                                    ).textTheme.titleMedium!.fontSize ??
+                                    16) *
+                                2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),

@@ -28,15 +28,9 @@ class RuleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    // Keep menu focus from activating the enclosing InkWell's highlight.
-    final actions = trailing == null
-        ? null
-        : Focus(
-            parentNode: Focus.maybeOf(context, scopeOk: true),
-            canRequestFocus: false,
-            skipTraversal: true,
-            child: trailing!,
-          );
+    // The trailing actions stay in the card's own traversal subtree so the
+    // D-pad can move right into them; each is a standard focusable button.
+    final actions = trailing;
     final duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : const Duration(milliseconds: 220);

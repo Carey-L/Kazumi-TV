@@ -228,7 +228,7 @@ class _ImageViewerState extends State<ImageViewer> {
                   ),
                   child: Text(
                     '${_currentIndex + 1} / ${widget.imageUrls.length}',
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: const TextStyle(color: Colors.white, fontSize: 21),
                   ),
                 ),
               ),

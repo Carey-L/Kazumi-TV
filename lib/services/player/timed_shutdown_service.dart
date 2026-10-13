@@ -197,7 +197,7 @@ class _CustomTimerDialogState extends State<_CustomTimerDialog> {
             Expanded(
               child: Column(
                 children: [
-                  const Text('时', style: TextStyle(fontSize: 14)),
+                  const Text('时', style: TextStyle(fontSize: 21)),
                   const SizedBox(height: 8),
                   Expanded(
                     child: CupertinoPicker(
@@ -211,7 +211,7 @@ class _CustomTimerDialogState extends State<_CustomTimerDialog> {
                         (index) => Center(
                           child: Text(
                             index.toString().padLeft(2, '0'),
-                            style: const TextStyle(fontSize: 20),
+                            style: const TextStyle(fontSize: 30),
                           ),
                         ),
                       ),
@@ -222,12 +222,12 @@ class _CustomTimerDialogState extends State<_CustomTimerDialog> {
             ),
             const Text(
               ':',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
             ),
             Expanded(
               child: Column(
                 children: [
-                  const Text('分', style: TextStyle(fontSize: 14)),
+                  const Text('分', style: TextStyle(fontSize: 21)),
                   const SizedBox(height: 8),
                   Expanded(
                     child: CupertinoPicker(
@@ -241,7 +241,7 @@ class _CustomTimerDialogState extends State<_CustomTimerDialog> {
                         (index) => Center(
                           child: Text(
                             index.toString().padLeft(2, '0'),
-                            style: const TextStyle(fontSize: 20),
+                            style: const TextStyle(fontSize: 30),
                           ),
                         ),
                       ),

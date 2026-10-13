@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'package:kazumi/utils/platform_variant.dart';
+import 'package:kazumi/utils/theme.dart';
 
 /// Gives TV cards a consistent ten-foot focus treatment.
 ///
@@ -67,7 +69,7 @@ class _TvFocusHighlightState extends State<TvFocusHighlight> {
             decoration: BoxDecoration(
               borderRadius: widget.borderRadius,
               border: Border.all(
-                color: Colors.white.withValues(alpha: progress),
+                color: kTvFocusBorderColor.withValues(alpha: progress),
                 width: 4,
               ),
             ),

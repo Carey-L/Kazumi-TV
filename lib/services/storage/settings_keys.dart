@@ -210,7 +210,7 @@ class SettingsKeys {
   );
   static const themeMode = SettingKey<String>(
     _SettingBoxKey.themeMode,
-    'system',
+    'dark',
     group: SettingGroup.theme,
   );
   static const themeColor = SettingKey<String>(

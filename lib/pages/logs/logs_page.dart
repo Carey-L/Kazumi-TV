@@ -209,7 +209,7 @@ class _LogsPageState extends State<LogsPage> {
                   overflow: TextOverflow.clip,
                   style: const TextStyle(
                     fontFamily: 'monospace',
-                    fontSize: 12,
+                    fontSize: 18,
                   ),
                 ),
               );

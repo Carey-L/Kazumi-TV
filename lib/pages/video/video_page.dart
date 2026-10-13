@@ -25,6 +25,7 @@ import 'package:kazumi/pages/video/video_side_panel.dart';
 import 'package:kazumi/pages/video/video_system_bars.dart';
 import 'package:kazumi/services/player/timed_shutdown_service.dart';
 import 'package:kazumi/services/storage/storage.dart';
+import 'package:kazumi/utils/focus.dart';
 
 class VideoPage extends StatefulWidget {
   const VideoPage({
@@ -210,6 +211,9 @@ class _VideoPageState extends State<VideoPage> {
   /// The debounce prevents one remote press being delivered through both key
   /// routes.
   Future<void> _handleSystemBack() async {
+    // First back press drops the keyboard/caret from the danmaku field.
+    if (unfocusTextInputOnBack()) return;
+
     final now = DateTime.now();
     if (_isExiting ||
         (_lastBackHandledAt != null &&

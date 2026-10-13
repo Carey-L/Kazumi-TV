@@ -419,15 +419,16 @@ class PlayerItemState extends State<PlayerItem>
   /// Escalating seek step for the focused progress bar.
   ///
   /// The first nudge moves 5s. Holding the key doubles the step on every
-  /// repeat, giving 5s, 10s, 20s, 40s. Reset on release so the next press
-  /// starts small again.
+  /// repeat up to 20s (5s, 10s, 20s), which keeps the held-seek speed
+  /// comfortable on a TV remote. Reset on release so the next press starts
+  /// small again.
   int _progressSeekCount = 0;
 
   Duration _progressSeekStep() =>
       Duration(seconds: 5 * (1 << _progressSeekCount));
 
   void _growProgressSeekStep() {
-    if (_progressSeekCount < 6) _progressSeekCount++;
+    if (_progressSeekCount < 2) _progressSeekCount++;
   }
 
   void _resetProgressSeekStep() => _progressSeekCount = 0;
@@ -1448,8 +1449,44 @@ class PlayerItemState extends State<PlayerItem>
                                   _finishInteractiveSeek(cancelled: cancelled),
                                 );
                               },
-                            ),
+                          ),
                     ),
+                    if (!playerController.playback.playing &&
+                        !playerController.playback.loading &&
+                        !videoPageController.loading)
+                      Center(
+                        child: Material(
+                          color: Colors.black45,
+                          borderRadius: BorderRadius.circular(32),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(32),
+                            onTap: playerController.play,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 18,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.play_arrow_rounded,
+                                    color: Colors.white,
+                                    size: 48,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${playerController.playback.currentPosition.toString().split('.').first} / '
+                                    '${playerController.playback.duration.toString().split('.').first}',
+                                    style: Theme.of(context).textTheme.titleMedium
+                                        ?.copyWith(color: Colors.white),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

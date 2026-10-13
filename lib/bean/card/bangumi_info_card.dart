@@ -187,7 +187,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                         ? '2000-11-11' // Skeleton Loader 占位符
                                         : widget.bangumiItem.airDate,
                                     style: TextStyle(
-                                      fontSize: 20,
+                                      fontSize: 30,
                                       fontWeight: FontWeight.bold,
                                       color:
                                           Theme.of(context).colorScheme.primary,
@@ -204,7 +204,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                     Text(
                                       '10.0 ********',
                                       style: TextStyle(
-                                        fontSize: 20,
+                                        fontSize: 30,
                                         fontWeight: FontWeight.bold,
                                         color: Theme.of(context)
                                             .colorScheme
@@ -219,7 +219,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                               ? '${widget.bangumiItem.ratingScore}'
                                               : '***',
                                           style: TextStyle(
-                                            fontSize: 16,
+                                            fontSize: 24,
                                             fontWeight: FontWeight.bold,
                                             color: Theme.of(context)
                                                 .colorScheme
@@ -253,7 +253,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                         ? '#${widget.bangumiItem.rank}'
                                         : '***',
                                     style: TextStyle(
-                                      fontSize: 20,
+                                      fontSize: 30,
                                       fontWeight: FontWeight.bold,
                                       color:
                                           Theme.of(context).colorScheme.primary,

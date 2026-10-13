@@ -483,7 +483,7 @@ class _RatingReviewDialogState extends State<RatingReviewDialog> {
           child: ExcludeSemantics(
               child: Text('$value',
                   style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600))),
+                      fontSize: 24, fontWeight: FontWeight.w600))),
         ),
       ),
     );
