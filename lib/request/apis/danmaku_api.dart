@@ -5,10 +5,28 @@ import 'package:kazumi/modules/danmaku/danmaku_search_response.dart';
 import 'package:kazumi/request/clients/danmaku_client.dart';
 import 'package:kazumi/request/config/api_endpoints.dart';
 import 'package:kazumi/services/logging/logger.dart';
+import 'package:kazumi/services/storage/danmaku_api_cache_service.dart';
 import 'package:kazumi/services/storage/storage.dart';
 
 class DanmakuApi {
   static final DanmakuClient _client = DanmakuClient.instance;
+  static final DanmakuApiCacheService _cache = DanmakuApiCacheService();
+
+  static Future<dynamic> _getCached(
+    String endpoint,
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    final cached = await _cache.read(path);
+    if (cached != null) return cached;
+
+    final response = await _client.get(
+      endpoint,
+      queryParameters: queryParameters,
+    );
+    await _cache.write(path, response);
+    return response;
+  }
 
   static Future<int> getDanDanBangumiIDByBgmBangumiID(int bgmBangumiID) async {
     final path = ApiEndpoints.formatUrl(
@@ -16,7 +34,7 @@ class DanmakuApi {
       [bgmBangumiID],
     );
     final endPoint = ApiEndpoints.dandanAPIDomain + path;
-    final jsonData = await _client.get(endPoint);
+    final jsonData = await _getCached(endPoint, path);
     return DanmakuEpisodeResponse.fromJson(jsonData).bangumiId;
   }
 
@@ -58,12 +76,14 @@ class DanmakuApi {
   static Future<List<DanmakuEntry>> _getComments(String episodeID) async {
     final endPoint =
         '${ApiEndpoints.dandanAPIDomain}${ApiEndpoints.dandanAPIComment}$episodeID';
+    final path = '${ApiEndpoints.dandanAPIComment}$episodeID';
     final conversion = DanmakuChConvert.fromValue(
       GStorage.getSetting(SettingsKeys.danmakuChConvert),
     );
     KazumiLogger().i('Danmaku: final request URL $endPoint');
-    final jsonData = await _client.get(
+    final jsonData = await _getCached(
       endPoint,
+      path,
       queryParameters: {
         'withRelated': 'true',
         'chConvert': conversion.value.toString(),

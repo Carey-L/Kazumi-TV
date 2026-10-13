@@ -6,6 +6,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/settings/theme_provider.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:kazumi/services/storage/storage.dart';
+import 'package:kazumi/services/storage/danmaku_api_cache_service.dart';
 import 'package:kazumi/services/storage/image_cache_service.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:kazumi/services/network/metered_network_service.dart';
@@ -81,6 +82,13 @@ void main() async {
   } catch (e) {
     // A cache cleanup failure must not prevent the app from starting.
     debugPrint('Image cache cleanup failed: $e');
+  }
+  // DanDanPlay API responses are valid only for this app session.
+  try {
+    await DanmakuApiCacheService().clear();
+  } catch (e) {
+    // A cache cleanup failure must not prevent the app from starting.
+    debugPrint('Danmaku API cache cleanup failed: $e');
   }
   await MeteredNetworkService.refresh();
   ProxyManager.applyProxy();
