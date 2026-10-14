@@ -171,6 +171,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final FocusNode _contentFocus = FocusNode(debugLabel: 'SettingsContent');
   final TvTraversalScopeController _contentTraversal =
       TvTraversalScopeController();
+  final Map<String, FocusNode> _menuItemFocusNodes = {};
   Object? _categoryNavigation;
   late String _location = _normalizePath(widget.location);
 
@@ -244,11 +245,12 @@ class _SettingsPageState extends State<SettingsPage> {
     if (primary.focusInDirection(TraversalDirection.left)) {
       return KeyEventResult.handled;
     }
-    final menuEntries = _menuFocus.traversalDescendants.where(
-      (node) => node is! FocusScopeNode,
-    );
-    if (menuEntries.isEmpty) return KeyEventResult.ignored;
-    menuEntries.first.requestFocus();
+    final selected = _selectedCategoryPath;
+    final target =
+        _menuItemFocusNodes[selected] ??
+        (_menuItemFocusNodes.isEmpty ? null : _menuItemFocusNodes.values.first);
+    if (target == null) return KeyEventResult.ignored;
+    target.requestFocus();
     return KeyEventResult.handled;
   }
 
@@ -256,6 +258,9 @@ class _SettingsPageState extends State<SettingsPage> {
   void dispose() {
     _menuFocus.dispose();
     _contentFocus.dispose();
+    for (final node in _menuItemFocusNodes.values) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -292,6 +297,11 @@ class _SettingsPageState extends State<SettingsPage> {
                         child: _SettingsMenu(
                           wide: true,
                           selectedPath: _selectedCategoryPath,
+                          focusNodeFor: (path) =>
+                              _menuItemFocusNodes.putIfAbsent(
+                                path,
+                                () => FocusNode(debugLabel: path),
+                              ),
                           onSelect: _replaceCategory,
                         ),
                       ),
@@ -366,11 +376,13 @@ class _SettingsMenu extends StatelessWidget {
   const _SettingsMenu({
     required this.wide,
     this.selectedPath,
+    this.focusNodeFor,
     required this.onSelect,
   });
 
   final bool wide;
   final String? selectedPath;
+  final FocusNode Function(String path)? focusNodeFor;
   final ValueChanged<String> onSelect;
 
   @override
@@ -392,6 +404,7 @@ class _SettingsMenu extends StatelessWidget {
                 _RailDestination(
                   category: category,
                   selected: selectedPath == category.path,
+                  focusNode: focusNodeFor?.call(category.path),
                   onTap: () => onSelect(category.path),
                 ),
             ] else
@@ -421,11 +434,13 @@ class _RailDestination extends StatelessWidget {
     required this.category,
     required this.selected,
     required this.onTap,
+    this.focusNode,
   });
 
   final _SettingsCategory category;
   final bool selected;
   final VoidCallback onTap;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -441,6 +456,7 @@ class _RailDestination extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
+          focusNode: focusNode,
           onTap: onTap,
           child: SizedBox(
             height: 56,

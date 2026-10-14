@@ -26,6 +26,9 @@ class VideoSidePanel extends StatefulWidget {
 
 class VideoSidePanelState extends State<VideoSidePanel>
     with SingleTickerProviderStateMixin {
+  final FocusScopeNode _focusScope = FocusScopeNode(
+    debugLabel: 'Episode dialog focus scope',
+  );
   late final AnimationController _animation = AnimationController(
     vsync: this,
     duration: SidePanelTransition.duration,
@@ -44,6 +47,7 @@ class VideoSidePanelState extends State<VideoSidePanel>
     if (_isOpening) {
       close();
     } else {
+      _focusScope.requestFocus();
       if (widget.disableAnimations) {
         _animation.value = 1;
       } else {
@@ -70,10 +74,9 @@ class VideoSidePanelState extends State<VideoSidePanel>
       close();
       return KeyEventResult.handled;
     }
-    if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
-        event.logicalKey == LogicalKeyboardKey.arrowRight) {
-      return KeyEventResult.handled;
-    }
+    // Do not consume horizontal D-pad navigation here. The first row of the
+    // dialog contains the locate and download buttons; consuming left/right
+    // at this scope made those controls unreachable from the road selector.
     return KeyEventResult.ignored;
   }
 
@@ -87,6 +90,7 @@ class VideoSidePanelState extends State<VideoSidePanel>
   @override
   void dispose() {
     _animation.dispose();
+    _focusScope.dispose();
     super.dispose();
   }
 
@@ -139,7 +143,8 @@ class VideoSidePanelState extends State<VideoSidePanel>
             context: context,
             removeTop: true,
             removeLeft: true,
-            child: Focus(
+            child: FocusScope(
+              node: _focusScope,
               autofocus: true,
               onKeyEvent: _handleKeyEvent,
               child: SafeArea(child: widget.child),

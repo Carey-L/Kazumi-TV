@@ -19,6 +19,8 @@ class InfoCommentsView extends StatefulWidget {
     required this.onReviewTap,
     required this.onRetry,
     required this.onLoadMore,
+    required this.onNavigateUp,
+    this.standalone = false,
   });
 
   final BangumiInterest? interest;
@@ -29,6 +31,8 @@ class InfoCommentsView extends StatefulWidget {
   final VoidCallback onReviewTap;
   final VoidCallback onRetry;
   final VoidCallback onLoadMore;
+  final VoidCallback onNavigateUp;
+  final bool standalone;
 
   @override
   State<InfoCommentsView> createState() => _InfoCommentsViewState();
@@ -62,7 +66,7 @@ class _InfoCommentsViewState extends State<InfoCommentsView> {
   /// Moves focus out of the list (back up to the tab header) without popping
   /// the detail route.
   void _leaveListFocus() {
-    FocusManager.instance.primaryFocus?.focusInDirection(TraversalDirection.up);
+    widget.onNavigateUp();
     _focusNode.unfocus();
   }
 
@@ -111,12 +115,31 @@ class _InfoCommentsViewState extends State<InfoCommentsView> {
     final step = (position.viewportDimension * 0.6).clamp(80.0, 400.0);
     final down = event.logicalKey == LogicalKeyboardKey.arrowDown;
     final up = event.logicalKey == LogicalKeyboardKey.arrowUp;
+    final nested = context.findAncestorStateOfType<NestedScrollViewState>();
+    final outer = nested?.outerController;
+    // This view consumes D-pad input so it can scroll without focusable
+    // comments. Drive the outer controller first as NestedScrollView normally
+    // would, otherwise the pinned header can never collapse or expand.
+    if (down && outer?.hasClients == true && outer!.position.extentAfter > 1) {
+      _scrollOuterBy(outer, step);
+      return KeyEventResult.handled;
+    }
     if (down && position.extentAfter > 1) {
       _scrollBy(step);
       return KeyEventResult.handled;
     }
     if (up && position.extentBefore > 1) {
       _scrollBy(-step);
+      return KeyEventResult.handled;
+    }
+    if (up && outer?.hasClients == true && outer!.position.extentBefore > 1) {
+      _scrollOuterBy(outer, -step);
+      return KeyEventResult.handled;
+    }
+    if (up ||
+        event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+        event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      _leaveListFocus();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
@@ -130,6 +153,18 @@ class _InfoCommentsViewState extends State<InfoCommentsView> {
     );
     _scrollController.animateTo(
       target,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _scrollOuterBy(ScrollController controller, double delta) {
+    final position = controller.position;
+    controller.animateTo(
+      (position.pixels + delta).clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      ),
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
     );
@@ -176,11 +211,13 @@ class _InfoCommentsViewState extends State<InfoCommentsView> {
                       scrollbars: false,
                     ),
                     slivers: [
-                      SliverOverlapInjector(
-                        handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
-                          context,
+                      if (!widget.standalone)
+                        SliverOverlapInjector(
+                          handle:
+                              NestedScrollView.sliverOverlapAbsorberHandleFor(
+                                context,
+                              ),
                         ),
-                      ),
                       if (ownComment == null && !showEmpty)
                         SliverPadding(
                           padding: EdgeInsets.fromLTRB(gutter, 12, gutter, 8),

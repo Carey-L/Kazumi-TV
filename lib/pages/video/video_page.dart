@@ -267,6 +267,18 @@ class _VideoPageState extends State<VideoPage> {
     if (!mounted || _isExiting) {
       return;
     }
+    final identity = videoPageController.currentHistoryIdentity;
+    if (identity != null &&
+        identity.canRecord &&
+        !videoPageController.loading &&
+        playerController.playback.playerDuration > Duration.zero) {
+      historyController.updateHistory(
+        identity,
+        playerController.playback.playerPosition,
+        duration: playerController.playback.playerDuration,
+      );
+      await historyController.flushPending();
+    }
     setState(() {
       webviewLogLines.clear();
       showDebugLog = false;
@@ -334,7 +346,10 @@ class _VideoPageState extends State<VideoPage> {
                   key: _sidePanelKey,
                   fullscreen: videoPageController.isFullscreen,
                   disableAnimations: disableAnimations,
-                  onOpened: _revealCurrentEpisode,
+                  onOpened: () {
+                    _revealCurrentEpisode();
+                    _episodePanelKey.currentState?.focusInitialControl();
+                  },
                   onClosed: () =>
                       playerItemKey.currentState?.focusProgressBar(),
                   child: tabBody,

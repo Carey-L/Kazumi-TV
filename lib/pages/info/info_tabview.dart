@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:kazumi/bean/widget/error_widget.dart';
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
@@ -41,6 +42,8 @@ class InfoTabView extends StatefulWidget {
     required this.staffList,
     required this.relationList,
     required this.isLoading,
+    required this.onNavigateToTabs,
+    this.visibleIndex,
   });
 
   final bool commentsQueryTimeout;
@@ -65,6 +68,8 @@ class InfoTabView extends StatefulWidget {
   final List<StaffFullItem> staffList;
   final List<BangumiRelation> relationList;
   final bool isLoading;
+  final VoidCallback onNavigateToTabs;
+  final int? visibleIndex;
 
   @override
   State<InfoTabView> createState() => _InfoTabViewState();
@@ -74,6 +79,78 @@ class _InfoTabViewState extends State<InfoTabView> {
   final maxWidth = 950.0;
   bool fullIntro = false;
   bool fullTag = false;
+  final ScrollController _staffScrollController = ScrollController();
+  final FocusNode _staffFocus = FocusNode(debugLabel: '制作人员列表');
+
+  @override
+  void dispose() {
+    _staffScrollController.dispose();
+    _staffFocus.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _handleStaffKey(FocusNode _, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (!_staffScrollController.hasClients) return KeyEventResult.ignored;
+    final position = _staffScrollController.position;
+    final step = (position.viewportDimension * 0.6).clamp(80.0, 400.0);
+    final outer = context
+        .findAncestorStateOfType<NestedScrollViewState>()
+        ?.outerController;
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
+        outer?.hasClients == true &&
+        outer!.position.extentAfter > 1) {
+      _scrollOuterBy(outer, step);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
+        position.extentAfter > 1) {
+      _scrollStaff(step);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
+        position.extentBefore > 1) {
+      _scrollStaff(-step);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
+        outer?.hasClients == true &&
+        outer!.position.extentBefore > 1) {
+      _scrollOuterBy(outer, -step);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      widget.onNavigateToTabs();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _scrollStaff(double delta) {
+    final position = _staffScrollController.position;
+    _staffScrollController.animateTo(
+      (position.pixels + delta).clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      ),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _scrollOuterBy(ScrollController controller, double delta) {
+    final position = controller.position;
+    controller.animateTo(
+      (position.pixels + delta).clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      ),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   Widget get infoBody {
     return Center(
@@ -88,50 +165,54 @@ class _InfoTabViewState extends State<InfoTabView> {
             children: [
               Text('简介', style: TextStyle(fontSize: 27)),
               const SizedBox(height: 8),
-              LayoutBuilder(builder: (context, constraints) {
-                final span = TextSpan(text: widget.bangumiItem.summary);
-                final tp =
-                    TextPainter(text: span, textDirection: TextDirection.ltr);
-                tp.layout(maxWidth: constraints.maxWidth);
-                final numLines = tp.computeLineMetrics().length;
-                if (numLines > 7) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      SizedBox(
-                        height: fullIntro ? null : 120,
-                        width: MediaQuery.sizeOf(context).width > maxWidth
-                            ? maxWidth
-                            : MediaQuery.sizeOf(context).width - 32,
-                        child: SelectableText(
-                          widget.bangumiItem.summary,
-                          textAlign: TextAlign.start,
-                          scrollBehavior: const ScrollBehavior().copyWith(
-                            scrollbars: false,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final span = TextSpan(text: widget.bangumiItem.summary);
+                  final tp = TextPainter(
+                    text: span,
+                    textDirection: TextDirection.ltr,
+                  );
+                  tp.layout(maxWidth: constraints.maxWidth);
+                  final numLines = tp.computeLineMetrics().length;
+                  if (numLines > 7) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        SizedBox(
+                          height: fullIntro ? null : 120,
+                          width: MediaQuery.sizeOf(context).width > maxWidth
+                              ? maxWidth
+                              : MediaQuery.sizeOf(context).width - 32,
+                          child: SelectableText(
+                            widget.bangumiItem.summary,
+                            textAlign: TextAlign.start,
+                            scrollBehavior: const ScrollBehavior().copyWith(
+                              scrollbars: false,
+                            ),
+                            scrollPhysics: NeverScrollableScrollPhysics(),
+                            selectionHeightStyle: ui.BoxHeightStyle.max,
                           ),
-                          scrollPhysics: NeverScrollableScrollPhysics(),
-                          selectionHeightStyle: ui.BoxHeightStyle.max,
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            fullIntro = !fullIntro;
-                          });
-                        },
-                        child: Text(fullIntro ? '加载更少' : '加载更多'),
-                      ),
-                    ],
-                  );
-                } else {
-                  return SelectableText(
-                    widget.bangumiItem.summary,
-                    textAlign: TextAlign.start,
-                    scrollPhysics: NeverScrollableScrollPhysics(),
-                    selectionHeightStyle: ui.BoxHeightStyle.max,
-                  );
-                }
-              }),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              fullIntro = !fullIntro;
+                            });
+                          },
+                          child: Text(fullIntro ? '加载更少' : '加载更多'),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return SelectableText(
+                      widget.bangumiItem.summary,
+                      textAlign: TextAlign.start,
+                      scrollPhysics: NeverScrollableScrollPhysics(),
+                      selectionHeightStyle: ui.BoxHeightStyle.max,
+                    );
+                  }
+                },
+              ),
               const SizedBox(height: 16),
               Text('标签', style: TextStyle(fontSize: 27)),
               const SizedBox(height: 8),
@@ -139,42 +220,47 @@ class _InfoTabViewState extends State<InfoTabView> {
                 spacing: 8.0,
                 runSpacing: isDesktop() ? 8 : 0,
                 children: List<Widget>.generate(
-                    fullTag || widget.bangumiItem.tags.length < 13
-                        ? widget.bangumiItem.tags.length
-                        : 13, (int index) {
-                  if (!fullTag && index == 12) {
+                  fullTag || widget.bangumiItem.tags.length < 13
+                      ? widget.bangumiItem.tags.length
+                      : 13,
+                  (int index) {
+                    if (!fullTag && index == 12) {
+                      return ActionChip(
+                        label: Text(
+                          '更多 +',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            fullTag = !fullTag;
+                          });
+                        },
+                      );
+                    }
                     return ActionChip(
-                      label: Text(
-                        '更多 +',
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary),
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('${widget.bangumiItem.tags[index].name} '),
+                          Text(
+                            '${widget.bangumiItem.tags[index].count}',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
                       ),
                       onPressed: () {
-                        setState(() {
-                          fullTag = !fullTag;
-                        });
+                        final tagName = Uri.encodeComponent(
+                          widget.bangumiItem.tags[index].name,
+                        );
+                        context.pushNamed('/search/$tagName');
                       },
                     );
-                  }
-                  return ActionChip(
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('${widget.bangumiItem.tags[index].name} '),
-                        Text(
-                          '${widget.bangumiItem.tags[index].count}',
-                          style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary),
-                        ),
-                      ],
-                    ),
-                    onPressed: () {
-                      final tagName = Uri.encodeComponent(
-                          widget.bangumiItem.tags[index].name);
-                      context.pushNamed('/search/$tagName');
-                    },
-                  );
-                }).toList(),
+                  },
+                ).toList(),
               ),
             ],
           ),
@@ -187,14 +273,15 @@ class _InfoTabViewState extends State<InfoTabView> {
     return Builder(
       builder: (BuildContext context) {
         return CustomScrollView(
-          scrollBehavior: const ScrollBehavior().copyWith(
-            scrollbars: false,
-          ),
+          scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
           key: const PageStorageKey<String>('关联'),
           slivers: <Widget>[
-            SliverOverlapInjector(
-              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-            ),
+            if (widget.visibleIndex == null)
+              SliverOverlapInjector(
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                  context,
+                ),
+              ),
             SliverLayoutBuilder(
               builder: (context, constraints) {
                 if (widget.relationsQueryTimeout) {
@@ -226,12 +313,13 @@ class _InfoTabViewState extends State<InfoTabView> {
                 final crossAxisCount = contentWidth >= 840
                     ? 3
                     : contentWidth >= 560
-                        ? 2
-                        : 1;
+                    ? 2
+                    : 1;
                 final showSkeleton =
                     !widget.relationsHasLoaded || widget.relationsIsLoading;
-                final itemCount =
-                    showSkeleton ? crossAxisCount : widget.relationList.length;
+                final itemCount = showSkeleton
+                    ? crossAxisCount
+                    : widget.relationList.length;
 
                 return SliverPadding(
                   padding: EdgeInsets.fromLTRB(
@@ -247,27 +335,24 @@ class _InfoTabViewState extends State<InfoTabView> {
                       crossAxisSpacing: StyleString.cardSpace,
                       mainAxisExtent: _RelatedBangumiCardH.cardHeight,
                     ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        if (showSkeleton) {
-                          return LayoutBuilder(
-                            builder: (context, constraints) {
-                              return Skeletonizer.zone(
-                                child: Bone(
-                                  width: constraints.maxWidth,
-                                  height: _RelatedBangumiCardH.cardHeight,
-                                  uniRadius: 14,
-                                ),
-                              );
-                            },
-                          );
-                        }
-                        return _RelatedBangumiCardH(
-                          relation: widget.relationList[index],
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      if (showSkeleton) {
+                        return LayoutBuilder(
+                          builder: (context, constraints) {
+                            return Skeletonizer.zone(
+                              child: Bone(
+                                width: constraints.maxWidth,
+                                height: _RelatedBangumiCardH.cardHeight,
+                                uniRadius: 14,
+                              ),
+                            );
+                          },
                         );
-                      },
-                      childCount: itemCount,
-                    ),
+                      }
+                      return _RelatedBangumiCardH(
+                        relation: widget.relationList[index],
+                      );
+                    }, childCount: itemCount),
                   ),
                 );
               },
@@ -301,7 +386,9 @@ class _InfoTabViewState extends State<InfoTabView> {
                     spacing: 8.0,
                     runSpacing: 8.0,
                     children: List.generate(
-                        4, (_) => Bone.button(uniRadius: 8, height: 32)),
+                      4,
+                      (_) => Bone.button(uniRadius: 8, height: 32),
+                    ),
                   ),
                 ),
             ],
@@ -314,76 +401,86 @@ class _InfoTabViewState extends State<InfoTabView> {
   Widget get staffListBody {
     return Builder(
       builder: (BuildContext context) {
-        return CustomScrollView(
-          scrollBehavior: const ScrollBehavior().copyWith(
-            scrollbars: false,
-          ),
-          key: PageStorageKey<String>('制作人员'),
-          slivers: <Widget>[
-            SliverOverlapInjector(
-              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-            ),
-            SliverLayoutBuilder(builder: (context, _) {
-              if (widget.staffList.isNotEmpty) {
-                return SliverList.builder(
-                  itemCount: widget.staffList.length,
-                  itemBuilder: (context, index) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        return Focus(
+          focusNode: _staffFocus,
+          onKeyEvent: _handleStaffKey,
+          child: CustomScrollView(
+            controller: _staffScrollController,
+            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
+            key: PageStorageKey<String>('制作人员'),
+            slivers: <Widget>[
+              if (widget.visibleIndex == null)
+                SliverOverlapInjector(
+                  handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                    context,
+                  ),
+                ),
+              SliverLayoutBuilder(
+                builder: (context, _) {
+                  if (widget.staffList.isNotEmpty) {
+                    return SliverList.builder(
+                      itemCount: widget.staffList.length,
+                      itemBuilder: (context, index) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > maxWidth
+                                  ? maxWidth
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: StaffCard(
+                                staffFullItem: widget.staffList[index],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  if (widget.staffQueryTimeout) {
+                    return SliverFillRemaining(
+                      child: GeneralErrorWidget(
+                        title: '制作人员加载失败',
+                        errMsg: '请检查网络连接后重试。',
+                        onRetry: widget.loadStaff,
+                      ),
+                    );
+                  }
+                  if (widget.staffIsEmpty) {
+                    return const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: GeneralEmptyState(
+                        icon: Icons.groups_rounded,
+                        title: '暂无制作人员信息',
+                      ),
+                    );
+                  }
+                  return SliverList.builder(
+                    itemCount: 8,
+                    itemBuilder: (context, _) {
+                      return Align(
+                        alignment: Alignment.topCenter,
                         child: SizedBox(
                           width: MediaQuery.sizeOf(context).width > maxWidth
                               ? maxWidth
                               : MediaQuery.sizeOf(context).width - 32,
-                          child: StaffCard(
-                            staffFullItem: widget.staffList[index],
+                          child: Skeletonizer.zone(
+                            child: ListTile(
+                              leading: Bone.circle(size: 36),
+                              title: Bone.text(width: 100),
+                              subtitle: Bone.text(width: 80),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              }
-              if (widget.staffQueryTimeout) {
-                return SliverFillRemaining(
-                  child: GeneralErrorWidget(
-                    title: '制作人员加载失败',
-                    errMsg: '请检查网络连接后重试。',
-                    onRetry: widget.loadStaff,
-                  ),
-                );
-              }
-              if (widget.staffIsEmpty) {
-                return const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: GeneralEmptyState(
-                    icon: Icons.groups_rounded,
-                    title: '暂无制作人员信息',
-                  ),
-                );
-              }
-              return SliverList.builder(
-                itemCount: 8,
-                itemBuilder: (context, _) {
-                  return Align(
-                    alignment: Alignment.topCenter,
-                    child: SizedBox(
-                      width: MediaQuery.sizeOf(context).width > maxWidth
-                          ? maxWidth
-                          : MediaQuery.sizeOf(context).width - 32,
-                      child: Skeletonizer.zone(
-                        child: ListTile(
-                          leading: Bone.circle(size: 36),
-                          title: Bone.text(width: 100),
-                          subtitle: Bone.text(width: 80),
-                        ),
-                      ),
-                    ),
+                      );
+                    },
                   );
                 },
-              );
-            }),
-          ],
+              ),
+            ],
+          ),
         );
       },
     );
@@ -393,74 +490,77 @@ class _InfoTabViewState extends State<InfoTabView> {
     return Builder(
       builder: (BuildContext context) {
         return CustomScrollView(
-          scrollBehavior: const ScrollBehavior().copyWith(
-            scrollbars: false,
-          ),
+          scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
           key: PageStorageKey<String>('角色'),
           slivers: <Widget>[
-            SliverOverlapInjector(
-              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-            ),
-            SliverLayoutBuilder(builder: (context, _) {
-              if (widget.characterList.isNotEmpty) {
+            if (widget.visibleIndex == null)
+              SliverOverlapInjector(
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                  context,
+                ),
+              ),
+            SliverLayoutBuilder(
+              builder: (context, _) {
+                if (widget.characterList.isNotEmpty) {
+                  return SliverList.builder(
+                    itemCount: widget.characterList.length,
+                    itemBuilder: (context, index) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > maxWidth
+                                ? maxWidth
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: CharacterCard(
+                              characterItem: widget.characterList[index],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                if (widget.charactersQueryTimeout) {
+                  return SliverFillRemaining(
+                    child: GeneralErrorWidget(
+                      title: '角色列表加载失败',
+                      errMsg: '请检查网络连接后重试。',
+                      onRetry: widget.loadCharacters,
+                    ),
+                  );
+                }
+                if (widget.charactersIsEmpty) {
+                  return const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: GeneralEmptyState(
+                      icon: Icons.people_alt_rounded,
+                      title: '暂无角色信息',
+                    ),
+                  );
+                }
                 return SliverList.builder(
-                  itemCount: widget.characterList.length,
-                  itemBuilder: (context, index) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > maxWidth
-                              ? maxWidth
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: CharacterCard(
-                            characterItem: widget.characterList[index],
+                  itemCount: 4,
+                  itemBuilder: (context, _) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: MediaQuery.sizeOf(context).width > maxWidth
+                            ? maxWidth
+                            : MediaQuery.sizeOf(context).width - 32,
+                        child: Skeletonizer.zone(
+                          child: ListTile(
+                            leading: Bone.circle(size: 36),
+                            title: Bone.text(width: 100),
+                            subtitle: Bone.text(width: 80),
                           ),
                         ),
                       ),
                     );
                   },
                 );
-              }
-              if (widget.charactersQueryTimeout) {
-                return SliverFillRemaining(
-                  child: GeneralErrorWidget(
-                    title: '角色列表加载失败',
-                    errMsg: '请检查网络连接后重试。',
-                    onRetry: widget.loadCharacters,
-                  ),
-                );
-              }
-              if (widget.charactersIsEmpty) {
-                return const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: GeneralEmptyState(
-                    icon: Icons.people_alt_rounded,
-                    title: '暂无角色信息',
-                  ),
-                );
-              }
-              return SliverList.builder(
-                itemCount: 4,
-                itemBuilder: (context, _) {
-                  return Align(
-                    alignment: Alignment.topCenter,
-                    child: SizedBox(
-                      width: MediaQuery.sizeOf(context).width > maxWidth
-                          ? maxWidth
-                          : MediaQuery.sizeOf(context).width - 32,
-                      child: Skeletonizer.zone(
-                        child: ListTile(
-                          leading: Bone.circle(size: 36),
-                          title: Bone.text(width: 100),
-                          subtitle: Bone.text(width: 80),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            }),
+              },
+            ),
           ],
         );
       },
@@ -469,48 +569,50 @@ class _InfoTabViewState extends State<InfoTabView> {
 
   @override
   Widget build(BuildContext context) {
-    return TabBarView(
-      controller: widget.tabController,
-      children: [
-        Builder(
-          // Resolve the overlap handle inside the NestedScrollView.
-          builder: (BuildContext context) {
-            return CustomScrollView(
-              scrollBehavior: const ScrollBehavior().copyWith(
-                scrollbars: false,
-              ),
-              key: PageStorageKey<String>('概览'),
-              slivers: <Widget>[
+    final pages = <Widget>[
+      Builder(
+        // Resolve the overlap handle inside the NestedScrollView.
+        builder: (BuildContext context) {
+          return CustomScrollView(
+            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
+            key: PageStorageKey<String>('概览'),
+            slivers: <Widget>[
+              if (widget.visibleIndex == null)
                 SliverOverlapInjector(
-                  handle:
-                      NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-                ),
-                SliverToBoxAdapter(
-                  child: SafeArea(
-                    top: false,
-                    bottom: false,
-                    child: widget.isLoading ? infoBodyBone : infoBody,
+                  handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                    context,
                   ),
                 ),
-              ],
-            );
-          },
-        ),
-        InfoCommentsView(
-          interest: widget.bangumiItem.interest,
-          comments: widget.commentsList,
-          isLoading: widget.commentsIsLoading,
-          hasLoaded: widget.commentsHasLoaded,
-          hasError: widget.commentsQueryTimeout,
-          onReviewTap: widget.onWriteReview,
-          onRetry: () => widget.loadMoreComments(loadMore: false),
-          onLoadMore: () => widget.loadMoreComments(loadMore: true),
-        ),
-        charactersListBody,
-        relationsListBody,
-        staffListBody,
-      ],
-    );
+              SliverToBoxAdapter(
+                child: SafeArea(
+                  top: false,
+                  bottom: false,
+                  child: widget.isLoading ? infoBodyBone : infoBody,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+      InfoCommentsView(
+        interest: widget.bangumiItem.interest,
+        comments: widget.commentsList,
+        isLoading: widget.commentsIsLoading,
+        hasLoaded: widget.commentsHasLoaded,
+        hasError: widget.commentsQueryTimeout,
+        onReviewTap: widget.onWriteReview,
+        onRetry: () => widget.loadMoreComments(loadMore: false),
+        onLoadMore: () => widget.loadMoreComments(loadMore: true),
+        onNavigateUp: widget.onNavigateToTabs,
+        standalone: widget.visibleIndex != null,
+      ),
+      charactersListBody,
+      relationsListBody,
+      staffListBody,
+    ];
+    final index = widget.visibleIndex;
+    if (index != null) return pages[index];
+    return TabBarView(controller: widget.tabController, children: pages);
   }
 }
 
@@ -527,8 +629,9 @@ class _RelatedBangumiCardH extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textScaler =
-        MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.1);
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.1);
     final relationLabel = relation.relation.isEmpty ? '关联' : relation.relation;
     final bangumiItem = relation.toBangumiItem();
     final title = bangumiItem.nameCn.isEmpty
@@ -540,9 +643,7 @@ class _RelatedBangumiCardH extends StatelessWidget {
       margin: EdgeInsets.zero,
       color: colorScheme.surfaceContainerLow,
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         onTap: () {
           context.pushNamed('/info/', arguments: bangumiItem);
@@ -552,8 +653,10 @@ class _RelatedBangumiCardH extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final gap = constraints.maxWidth.clamp(0.0, 10.0).toDouble();
-              final maxImageWidth =
-                  (constraints.maxWidth - gap).clamp(0.0, 152.0);
+              final maxImageWidth = (constraints.maxWidth - gap).clamp(
+                0.0,
+                152.0,
+              );
               final imageWidth = (constraints.maxWidth * 0.42)
                   .clamp(0.0, maxImageWidth)
                   .toDouble();

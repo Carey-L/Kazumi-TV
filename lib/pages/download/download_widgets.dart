@@ -37,25 +37,28 @@ class DownloadRecordCard extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final episodes = record.episodes.values;
     final totalCount = episodes.length;
-    final completedCount =
-        episodes.where((e) => e.status == DownloadStatus.completed).length;
+    final completedCount = episodes
+        .where((e) => e.status == DownloadStatus.completed)
+        .length;
     final activeCount = episodes
-        .where((e) =>
-            e.status == DownloadStatus.downloading ||
-            e.status == DownloadStatus.resolving ||
-            e.status == DownloadStatus.pending)
+        .where(
+          (e) =>
+              e.status == DownloadStatus.downloading ||
+              e.status == DownloadStatus.resolving ||
+              e.status == DownloadStatus.pending,
+        )
         .length;
     final aggregateProgress = totalCount == 0
         ? 0.0
         : episodes.fold<double>(
-              0,
-              (sum, e) =>
-                  sum +
-                  (e.status == DownloadStatus.completed
-                      ? 1.0
-                      : e.progressPercent),
-            ) /
-            totalCount;
+                0,
+                (sum, e) =>
+                    sum +
+                    (e.status == DownloadStatus.completed
+                        ? 1.0
+                        : e.progressPercent),
+              ) /
+              totalCount;
     final allCompleted = completedCount >= totalCount;
 
     var meta = '$completedCount/$totalCount 已完成';
@@ -75,83 +78,84 @@ class DownloadRecordCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          InkWell(
-            onTap: onToggle,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  NetworkImgLayer(
-                    src: record.bangumiCover,
-                    width: 56,
-                    height: 75,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          record.bangumiName,
-                          style: textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                NetworkImgLayer(
+                  src: record.bangumiCover,
+                  width: 56,
+                  height: 75,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        record.bangumiName,
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 4,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            RuleTag(
-                              label: record.pluginName,
-                              background: colorScheme.secondaryContainer,
-                              foreground: colorScheme.onSecondaryContainer,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          RuleTag(
+                            label: record.pluginName,
+                            background: colorScheme.secondaryContainer,
+                            foreground: colorScheme.onSecondaryContainer,
+                          ),
+                          Text(
+                            meta,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
                             ),
-                            Text(
-                              meta,
-                              style: textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  KazumiMenuButton(
-                    animated: false,
-                    builder: (context, toggle) => IconButton(
-                      icon: Icon(Icons.more_vert,
-                          color: colorScheme.onSurfaceVariant),
-                      tooltip: '更多操作',
-                      onPressed: toggle,
-                    ),
-                    menuChildren: [
-                      KazumiMenuItem(label: '全部开始', onPressed: onResumeAll),
-                      KazumiMenuItem(
-                        label: '全部删除',
-                        destructive: true,
-                        onPressed: onDeleteAll,
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: AnimatedRotation(
-                      turns: expanded ? 0.5 : 0,
-                      duration: _kExpandDuration,
-                      curve: _kExpandCurve,
-                      child: Icon(
-                        Icons.expand_more,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                ),
+                KazumiMenuButton(
+                  animated: false,
+                  builder: (context, toggle) => IconButton(
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    tooltip: '更多操作',
+                    onPressed: toggle,
+                  ),
+                  menuChildren: [
+                    KazumiMenuItem(label: '全部开始', onPressed: onResumeAll),
+                    KazumiMenuItem(
+                      label: '全部删除',
+                      destructive: true,
+                      onPressed: onDeleteAll,
+                    ),
+                  ],
+                ),
+                IconButton(
+                  tooltip: expanded ? '收起剧集' : '展开剧集',
+                  onPressed: onToggle,
+                  icon: AnimatedRotation(
+                    turns: expanded ? 0.5 : 0,
+                    duration: _kExpandDuration,
+                    curve: _kExpandCurve,
+                    child: Icon(
+                      Icons.expand_more,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           if (!allCompleted)
@@ -196,53 +200,50 @@ class DownloadEpisodeTile extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isError = episode.status == DownloadStatus.failed;
-    final showProgress = episode.status == DownloadStatus.downloading ||
+    final showProgress =
+        episode.status == DownloadStatus.downloading ||
         (episode.status == DownloadStatus.paused &&
             episode.progressPercent > 0);
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onPlay,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Row(
-          children: [
-            _EpisodeStatusBadge(episode: episode),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    episode.episodeName.isNotEmpty
-                        ? episode.episodeName
-                        : '第${episode.episodeNumber}集',
-                    style: textTheme.bodyMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Row(
+        children: [
+          _EpisodeStatusBadge(episode: episode),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  episode.episodeName.isNotEmpty
+                      ? episode.episodeName
+                      : '第${episode.episodeNumber}集',
+                  style: textTheme.bodyMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  statusText,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: isError
+                        ? colorScheme.error
+                        : colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    statusText,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: isError
-                          ? colorScheme.error
-                          : colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (showProgress) ...[
-                    const SizedBox(height: 6),
-                    LinearProgressIndicator(value: episode.progressPercent),
-                  ],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (showProgress) ...[
+                  const SizedBox(height: 6),
+                  LinearProgressIndicator(value: episode.progressPercent),
                 ],
-              ),
+              ],
             ),
-            const SizedBox(width: 8),
-            ...actions,
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          ...actions,
+        ],
       ),
     );
   }

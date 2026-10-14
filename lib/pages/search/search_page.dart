@@ -278,7 +278,11 @@ class _SearchPageState extends State<SearchPage> {
                               size: 18,
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
-                      onTap: () => _submit(history.keyword),
+                      // In management mode, confirm on a history row has the
+                      // same meaning as its visible delete affordance.
+                      onTap: _managingHistory
+                          ? () => _controller.deleteSearchHistory(history)
+                          : () => _submit(history.keyword),
                     ),
                   ),
               ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/card/network_img_layer.dart';
-import 'package:kazumi/bean/widget/kazumi_menu.dart';
+import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/modules/collect/collect_type.dart';
 import 'package:kazumi/modules/history/history_module.dart';
@@ -93,25 +93,6 @@ class HistoryRecordTile extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
-            // Keep menu focus outside the card's InkWell to prevent stuck highlights.
-            Positioned.fill(
-              child: Semantics(
-                button: !editing && !busy,
-                label: [
-                  title,
-                  episode,
-                  position,
-                  source,
-                  history.adapterName,
-                  time,
-                ].where((text) => text.isNotEmpty).join('，'),
-                child: InkWell(
-                  focusNode: focusNode,
-                  autofocus: autofocus,
-                  onTap: editing || busy ? null : onPlay,
-                ),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.all(16),
               child: LayoutBuilder(
@@ -249,6 +230,8 @@ class HistoryRecordTile extends StatelessWidget {
     final buttons = [
       IconButton.filledTonal(
         tooltip: '继续播放',
+        focusNode: focusNode,
+        autofocus: autofocus,
         style: IconButton.styleFrom(
           minimumSize: const Size(48, 48),
           backgroundColor: colors.primaryContainer,
@@ -257,35 +240,64 @@ class HistoryRecordTile extends StatelessWidget {
         onPressed: onPlay,
         icon: const Icon(Icons.play_arrow_rounded),
       ),
-      KazumiMenuButton(
-        menuChildren: [
-          KazumiMenuItem(onPressed: onDetails, label: '番剧详情'),
-          SubmenuButton(
-            menuChildren: [
-              for (final type in CollectType.values)
-                KazumiMenuItem(
-                  selected: collectType == type,
-                  onPressed: onChangeCollect == null
-                      ? null
-                      : () => onChangeCollect!(type),
-                  label: type.label,
-                ),
-            ],
-            child: Text(collectType.label),
-          ),
-          const Divider(),
-          KazumiMenuItem(destructive: true, onPressed: onDelete, label: '删除记录'),
-        ],
-        builder: (context, toggle) => IconButton(
-          tooltip: '更多操作',
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-          onPressed: toggle,
-          icon: const Icon(Icons.more_horiz_rounded),
-        ),
+      IconButton(
+        tooltip: '更多操作',
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        onPressed: () => _showMoreDialog(context),
+        icon: const Icon(Icons.more_horiz_rounded),
       ),
     ];
     return wide
         ? Row(mainAxisSize: MainAxisSize.min, children: buttons)
         : Column(mainAxisSize: MainAxisSize.min, children: buttons);
   }
+
+  Future<void> _showMoreDialog(BuildContext context) => KazumiDialog.show<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('播放记录操作'),
+      content: SizedBox(
+        width: 300,
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.info_outline_rounded),
+              title: const Text('番剧详情'),
+              onTap: () {
+                Navigator.of(dialogContext).pop();
+                onDetails();
+              },
+            ),
+            for (final type in CollectType.values)
+              ListTile(
+                leading: Icon(
+                  collectType == type
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_off_rounded,
+                ),
+                title: Text(type.label),
+                onTap: onChangeCollect == null
+                    ? null
+                    : () {
+                        Navigator.of(dialogContext).pop();
+                        onChangeCollect!(type);
+                      },
+              ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded),
+              title: const Text('删除记录'),
+              textColor: Theme.of(context).colorScheme.error,
+              iconColor: Theme.of(context).colorScheme.error,
+              onTap: () async {
+                Navigator.of(dialogContext).pop();
+                await onDelete();
+              },
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

@@ -531,6 +531,21 @@ class PlayerItemState extends State<PlayerItem>
     }
   }
 
+  void _saveHistoryProgress() {
+    final identity = videoPageController.currentHistoryIdentity;
+    if (videoPageController.loading ||
+        playerController.playback.playerDuration <= Duration.zero ||
+        identity == null ||
+        !identity.canRecord) {
+      return;
+    }
+    historyController.updateHistory(
+      identity,
+      playerController.playback.playerPosition,
+      duration: playerController.playback.playerDuration,
+    );
+  }
+
   Future<void> _bindAudioService() async {
     try {
       await _audioController.bindCallbacks(
@@ -1042,17 +1057,6 @@ class PlayerItemState extends State<PlayerItem>
       unawaited(_updateAndroidPIPActions());
       _syncAudioServiceState();
       _emitDanmakusForCurrentPosition();
-      final historyIdentity = videoPageController.currentHistoryIdentity;
-      if (playerController.playback.playerPlaying &&
-          !videoPageController.loading &&
-          historyIdentity != null &&
-          historyIdentity.canRecord) {
-        historyController.updateHistory(
-          historyIdentity,
-          playerController.playback.playerPosition,
-          duration: playerController.playback.playerDuration,
-        );
-      }
       final playingSelection = videoPageController.playbackEpisode;
       final playingRoadData =
           videoPageController.roadList[playingSelection.road];
@@ -1134,6 +1138,9 @@ class PlayerItemState extends State<PlayerItem>
         // Keep controls out of parsing, initialization and error states. The
         // first successful transition into playback reveals the panel.
         if (mounted && playing) showVideoController();
+        // Persist at a meaningful playback boundary instead of writing every
+        // second while a video is playing.
+        if (!playing) _saveHistoryProgress();
       },
     );
     if (Platform.isAndroid) {
@@ -1224,6 +1231,7 @@ class PlayerItemState extends State<PlayerItem>
     WidgetsBinding.instance.removeObserver(this);
     playerController.seeking.invalidateInteractiveSeek();
     playerTimer?.cancel();
+    _saveHistoryProgress();
     unawaited(historyController.flushPending());
     hideTimer?.cancel();
     _panelVisibilityController.dispose();
@@ -1449,7 +1457,7 @@ class PlayerItemState extends State<PlayerItem>
                                   _finishInteractiveSeek(cancelled: cancelled),
                                 );
                               },
-                          ),
+                            ),
                     ),
                     if (!playerController.playback.playing &&
                         !playerController.playback.loading &&
@@ -1478,7 +1486,9 @@ class PlayerItemState extends State<PlayerItem>
                                   Text(
                                     '${playerController.playback.currentPosition.toString().split('.').first} / '
                                     '${playerController.playback.duration.toString().split('.').first}',
-                                    style: Theme.of(context).textTheme.titleMedium
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
                                         ?.copyWith(color: Colors.white),
                                   ),
                                 ],

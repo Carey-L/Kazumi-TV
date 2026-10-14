@@ -5,6 +5,7 @@ import 'package:flutter/physics.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
+import 'package:kazumi/bean/widget/tv_focus_highlight.dart';
 import 'package:kazumi/modules/download/download_module.dart';
 import 'package:kazumi/modules/roads/road_module.dart';
 
@@ -50,8 +51,11 @@ class EpisodeSelectionPanelState extends State<EpisodeSelectionPanel> {
   @override
   void initState() {
     super.initState();
-    // Without this the D-pad stays on the player surface and the episode grid
-    // cannot be reached after the panel slides in.
+  }
+
+  /// Called by the modal owner only after it is visible. Requesting focus
+  /// during init would otherwise leave the invisible panel holding D-pad focus.
+  void focusInitialControl() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final roadSelector = _roadSelectorKey.currentState;
@@ -158,13 +162,16 @@ class EpisodeSelectionPanelState extends State<EpisodeSelectionPanel> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          _RoadSelector(
-                            key: _roadSelectorKey,
-                            roads: widget.roads,
-                            visibleRoad: _visibleRoad,
-                            isOffline: widget.isOffline,
-                            onChanged: _selectRoad,
-                            disableAnimations: widget.disableAnimations,
+                          TvFocusHighlight(
+                            borderRadius: BorderRadius.circular(20),
+                            child: _RoadSelector(
+                              key: _roadSelectorKey,
+                              roads: widget.roads,
+                              visibleRoad: _visibleRoad,
+                              isOffline: widget.isOffline,
+                              onChanged: _selectRoad,
+                              disableAnimations: widget.disableAnimations,
+                            ),
                           ),
                         ],
                       ),
@@ -677,99 +684,102 @@ class _EpisodeRowState extends State<_EpisodeRow>
             : downloadLabel,
     ].join(' · ');
 
-    return Semantics(
-      button: true,
-      onTap: widget.onTap,
-      selected: widget.selected,
-      inMutuallyExclusiveGroup: true,
-      label:
-          '${widget.name}，$playbackLabel'
-          '${downloadLabel == null ? '' : '，$downloadLabel'}',
-      child: Tooltip(
-        message:
-            '${widget.name} · $playbackLabel'
-            '${downloadLabel == null ? '' : ' · $downloadLabel'}',
-        excludeFromSemantics: true,
-        child: AnimatedBuilder(
-          animation: _press,
-          builder: (context, child) {
-            final restShape = widget.selected
-                ? BorderRadius.circular(20)
-                : BorderRadius.vertical(
-                    top: Radius.circular(widget.first ? 20 : 4),
-                    bottom: Radius.circular(widget.last ? 20 : 4),
-                  );
-            final press = _press.value.clamp(0.0, 1.0);
-            return Padding(
-              padding: EdgeInsets.only(bottom: widget.last ? 0 : 2),
-              child: Material(
-                animationDuration: _reduceMotion
-                    ? Duration.zero
-                    : const Duration(milliseconds: 200),
-                color: widget.selected
-                    ? colors.primary
-                    : colors.surfaceContainerLow,
-                borderRadius: BorderRadius.lerp(
-                  restShape,
-                  BorderRadius.circular(12),
-                  press,
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: child,
-              ),
-            );
-          },
-          child: InkWell(
-            onTap: widget.onTap,
-            onHighlightChanged: _setPressed,
-            excludeFromSemantics: true,
-            overlayColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.pressed) ||
-                  states.contains(WidgetState.focused)) {
-                return foreground.withValues(alpha: 0.1);
-              }
-              if (states.contains(WidgetState.hovered)) {
-                return foreground.withValues(alpha: 0.08);
-              }
-              return null;
-            }),
-            child: ExcludeSemantics(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 56),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
+    return TvFocusHighlight(
+      borderRadius: BorderRadius.circular(20),
+      child: Semantics(
+        button: true,
+        onTap: widget.onTap,
+        selected: widget.selected,
+        inMutuallyExclusiveGroup: true,
+        label:
+            '${widget.name}，$playbackLabel'
+            '${downloadLabel == null ? '' : '，$downloadLabel'}',
+        child: Tooltip(
+          message:
+              '${widget.name} · $playbackLabel'
+              '${downloadLabel == null ? '' : ' · $downloadLabel'}',
+          excludeFromSemantics: true,
+          child: AnimatedBuilder(
+            animation: _press,
+            builder: (context, child) {
+              final restShape = widget.selected
+                  ? BorderRadius.circular(20)
+                  : BorderRadius.vertical(
+                      top: Radius.circular(widget.first ? 20 : 4),
+                      bottom: Radius.circular(widget.last ? 20 : 4),
+                    );
+              final press = _press.value.clamp(0.0, 1.0);
+              return Padding(
+                padding: EdgeInsets.only(bottom: widget.last ? 0 : 2),
+                child: Material(
+                  animationDuration: _reduceMotion
+                      ? Duration.zero
+                      : const Duration(milliseconds: 200),
+                  color: widget.selected
+                      ? colors.primary
+                      : colors.surfaceContainerLow,
+                  borderRadius: BorderRadius.lerp(
+                    restShape,
+                    BorderRadius.circular(12),
+                    press,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: foreground,
-                          fontWeight: widget.selected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
-                      ),
-                      if (supportingText.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                  clipBehavior: Clip.antiAlias,
+                  child: child,
+                ),
+              );
+            },
+            child: InkWell(
+              onTap: widget.onTap,
+              onHighlightChanged: _setPressed,
+              excludeFromSemantics: true,
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.pressed) ||
+                    states.contains(WidgetState.focused)) {
+                  return foreground.withValues(alpha: 0.1);
+                }
+                if (states.contains(WidgetState.hovered)) {
+                  return foreground.withValues(alpha: 0.08);
+                }
+                return null;
+              }),
+              child: ExcludeSemantics(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 56),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          supportingText,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: widget.selected
-                                ? foreground
-                                : status == DownloadStatus.failed
-                                ? colors.error
-                                : colors.onSurfaceVariant,
+                          widget.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: foreground,
+                            fontWeight: widget.selected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                           ),
                         ),
+                        if (supportingText.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            supportingText,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: widget.selected
+                                  ? foreground
+                                  : status == DownloadStatus.failed
+                                  ? colors.error
+                                  : colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),

@@ -15,12 +15,14 @@ class BangumiInfoCardV extends StatefulWidget {
     required this.isLoading,
     required this.showRating,
     required this.onStartWatching,
+    this.sectionActions = const [],
   });
 
   final BangumiItem bangumiItem;
   final bool isLoading;
   final bool showRating;
   final VoidCallback onStartWatching;
+  final List<Widget> sectionActions;
 
   @override
   State<BangumiInfoCardV> createState() => _BangumiInfoCardVState();
@@ -272,6 +274,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               FilledButton.icon(
+                                autofocus: true,
                                 onPressed: widget.onStartWatching,
                                 icon: const Icon(Icons.play_arrow_rounded),
                                 label: const Text('开始观看'),
@@ -284,6 +287,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                   bangumiItem: widget.bangumiItem,
                                 ),
                               ),
+                              ...widget.sectionActions,
                             ],
                           ),
                         ),

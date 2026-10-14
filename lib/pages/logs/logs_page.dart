@@ -21,6 +21,8 @@ class LogsPage extends StatefulWidget {
 class _LogsPageState extends State<LogsPage> {
   final List<String> _logLines = [];
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _clearFocus = FocusNode(debugLabel: 'Clear logs');
+  final FocusNode _copyFocus = FocusNode(debugLabel: 'Copy logs');
 
   bool _isLoading = true;
   bool _hasError = false;
@@ -42,6 +44,8 @@ class _LogsPageState extends State<LogsPage> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _clearFocus.dispose();
+    _copyFocus.dispose();
     super.dispose();
   }
 
@@ -111,8 +115,9 @@ class _LogsPageState extends State<LogsPage> {
       if (!mounted) return;
 
       final remainingLines = _allLines.length - _displayedLines;
-      final linesToLoad =
-          remainingLines < _loadMoreCount ? remainingLines : _loadMoreCount;
+      final linesToLoad = remainingLines < _loadMoreCount
+          ? remainingLines
+          : _loadMoreCount;
 
       final newLines = _allLines.skip(_displayedLines).take(linesToLoad);
 
@@ -169,9 +174,7 @@ class _LogsPageState extends State<LogsPage> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(
-        child: LoadingIndicator(),
-      );
+      return const Center(child: LoadingIndicator());
     }
 
     if (_hasError) {
@@ -207,10 +210,7 @@ class _LogsPageState extends State<LogsPage> {
                   _logLines[index],
                   softWrap: false,
                   overflow: TextOverflow.clip,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 18,
-                  ),
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 18),
                 ),
               );
             },
@@ -221,23 +221,27 @@ class _LogsPageState extends State<LogsPage> {
   }
 
   Widget _buildFloatingButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        FloatingActionButton(
-          heroTag: null,
-          onPressed: _clearLogs,
-          tooltip: '清空日志',
-          child: const Icon(Icons.clear_all),
-        ),
-        const SizedBox(width: 15),
-        FloatingActionButton(
-          heroTag: null,
-          onPressed: _copyLogs,
-          tooltip: '复制日志',
-          child: const Icon(Icons.copy),
-        ),
-      ],
+    return FocusTraversalGroup(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: null,
+            focusNode: _clearFocus,
+            onPressed: _clearLogs,
+            tooltip: '清空日志',
+            child: const Icon(Icons.clear_all),
+          ),
+          const SizedBox(width: 15),
+          FloatingActionButton(
+            heroTag: null,
+            focusNode: _copyFocus,
+            onPressed: _copyLogs,
+            tooltip: '复制日志',
+            child: const Icon(Icons.copy),
+          ),
+        ],
+      ),
     );
   }
 }

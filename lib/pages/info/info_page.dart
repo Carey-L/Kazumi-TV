@@ -51,6 +51,7 @@ class _InfoPageState extends State<InfoPage>
   late final TabController infoTabController;
   final GlobalKey<NestedScrollViewState> _nestedScrollKey = GlobalKey();
   final ScrollController _outerScrollController = ScrollController();
+  final FocusNode _tabFocus = FocusNode(debugLabel: '番剧详情导航栏');
   late final bool showRating;
   int _headerRevealRequest = 0;
 
@@ -215,6 +216,100 @@ class _InfoPageState extends State<InfoPage>
     );
   }
 
+  Future<void> _openSection(int index) async {
+    switch (index) {
+      case 1:
+        await onCommentsTabSelected();
+      case 2:
+        await loadCharacters();
+      case 3:
+        await loadRelations();
+      case 4:
+        await loadStaff();
+    }
+    if (!mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => _InfoSectionSheet(
+          index: index,
+          controller: infoController,
+          commentsQueryTimeout: commentsQueryTimeout,
+          commentsHasLoaded: commentsHasLoaded,
+          charactersQueryTimeout: charactersQueryTimeout,
+          charactersIsEmpty: charactersIsEmpty,
+          staffQueryTimeout: staffQueryTimeout,
+          staffIsEmpty: staffIsEmpty,
+          commentsIsLoading: commentsIsLoading,
+          onWriteReview: _openReviewEditor,
+          onRetryComments: () => loadMoreComments(loadMore: false),
+          onLoadMoreComments: () => loadMoreComments(loadMore: true),
+          onRetryCharacters: loadCharacters,
+          onRetryRelations: loadRelations,
+          onRetryStaff: loadStaff,
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionNavigation() => SafeArea(
+    top: false,
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children:
+            [
+                  ('概览', Icons.info_outline_rounded, 0),
+                  ('吐槽', Icons.chat_bubble_outline_rounded, 1),
+                  ('角色', Icons.people_alt_outlined, 2),
+                  ('关联', Icons.account_tree_outlined, 3),
+                  ('制作人员', Icons.groups_outlined, 4),
+                ]
+                .map(
+                  (entry) => FilledButton.tonalIcon(
+                    onPressed: () => _openSection(entry.$3),
+                    icon: Icon(entry.$2, size: 18),
+                    label: Text(entry.$1),
+                  ),
+                )
+                .toList(),
+      ),
+    ),
+  );
+
+  Widget _buildOverview(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: Text(
+        infoController.bangumiItem.nameCn.isEmpty
+            ? infoController.bangumiItem.name
+            : infoController.bangumiItem.nameCn,
+      ),
+      actions: [InfoActionsMenu(bangumiItem: infoController.bangumiItem)],
+    ),
+    body: Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: Observer(
+              builder: (_) => Padding(
+                padding: const EdgeInsets.all(16),
+                child: BangumiInfoCardV(
+                  bangumiItem: infoController.bangumiItem,
+                  isLoading: _isShowingBangumiInfoSkeleton,
+                  showRating: showRating,
+                  onStartWatching: _showSourceSheet,
+                ),
+              ),
+            ),
+          ),
+        ),
+        _sectionNavigation(),
+      ],
+    ),
+  );
+
   void _revealHeaderWhenTabFocused(bool hasFocus) {
     if (!hasFocus) return;
     final request = ++_headerRevealRequest;
@@ -268,7 +363,6 @@ class _InfoPageState extends State<InfoPage>
     }
     infoTabController = TabController(length: _infoTabs.length, vsync: this);
     showRating = GStorage.getSetting(SettingsKeys.showRating);
-    infoTabController.addListener(onInfoTabChanged);
   }
 
   void onInfoTabChanged() {
@@ -317,7 +411,6 @@ class _InfoPageState extends State<InfoPage>
 
   @override
   void dispose() {
-    infoTabController.removeListener(onInfoTabChanged);
     infoController.characterList.clear();
     infoController.clearComments();
     infoController.staffList.clear();
@@ -325,6 +418,7 @@ class _InfoPageState extends State<InfoPage>
     infoController.pluginSearchResponseList.clear();
     infoTabController.dispose();
     _outerScrollController.dispose();
+    _tabFocus.dispose();
     super.dispose();
   }
 
@@ -365,6 +459,11 @@ class _InfoPageState extends State<InfoPage>
 
   @override
   Widget build(BuildContext context) {
+    // Keep the legacy branch only for an impossible layout fallback while the
+    // migration settles; normal detail pages render the direct overview.
+    if (!MediaQuery.sizeOf(context).width.isNegative) {
+      return _buildOverview(context);
+    }
     const topOffset = 0.0;
     return Scaffold(
       body: NestedScrollView(
@@ -482,6 +581,7 @@ class _InfoPageState extends State<InfoPage>
                 bottom: PreferredSize(
                   preferredSize: const Size.fromHeight(kTextTabBarHeight),
                   child: Focus(
+                    focusNode: _tabFocus,
                     onFocusChange: _revealHeaderWhenTabFocused,
                     child: TabBar(
                       controller: infoTabController,
@@ -522,12 +622,107 @@ class _InfoPageState extends State<InfoPage>
               relationsHasLoaded: infoController.relationsHasLoaded,
               loadRelations: loadRelations,
               isLoading: showBangumiInfoSkeleton,
+              onNavigateToTabs: _tabFocus.requestFocus,
             );
           },
         ),
       ),
     );
   }
+}
+
+class _InfoSectionSheet extends StatefulWidget {
+  const _InfoSectionSheet({
+    required this.index,
+    required this.controller,
+    required this.commentsQueryTimeout,
+    required this.commentsHasLoaded,
+    required this.charactersQueryTimeout,
+    required this.charactersIsEmpty,
+    required this.staffQueryTimeout,
+    required this.staffIsEmpty,
+    required this.commentsIsLoading,
+    required this.onWriteReview,
+    required this.onRetryComments,
+    required this.onLoadMoreComments,
+    required this.onRetryCharacters,
+    required this.onRetryRelations,
+    required this.onRetryStaff,
+  });
+
+  final int index;
+  final InfoController controller;
+  final bool commentsQueryTimeout;
+  final bool commentsHasLoaded;
+  final bool charactersQueryTimeout;
+  final bool charactersIsEmpty;
+  final bool staffQueryTimeout;
+  final bool staffIsEmpty;
+  final bool commentsIsLoading;
+  final VoidCallback onWriteReview;
+  final Future<void> Function() onRetryComments;
+  final Future<void> Function() onLoadMoreComments;
+  final Future<void> Function() onRetryCharacters;
+  final Future<void> Function() onRetryRelations;
+  final Future<void> Function() onRetryStaff;
+
+  @override
+  State<_InfoSectionSheet> createState() => _InfoSectionSheetState();
+}
+
+class _InfoSectionSheetState extends State<_InfoSectionSheet>
+    with SingleTickerProviderStateMixin {
+  static const _titles = ['概览', '吐槽', '角色', '关联', '制作人员'];
+  late final TabController _tabController = TabController(
+    length: _titles.length,
+    initialIndex: widget.index,
+    vsync: this,
+  );
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(_titles[widget.index])),
+    body: NestedScrollView(
+      headerSliverBuilder: (_, _) => const [],
+      body: Observer(
+        builder: (_) => InfoTabView(
+          tabController: _tabController,
+          visibleIndex: widget.index,
+          bangumiItem: widget.controller.bangumiItem,
+          commentsQueryTimeout: widget.commentsQueryTimeout,
+          commentsHasLoaded: widget.commentsHasLoaded,
+          charactersQueryTimeout: widget.charactersQueryTimeout,
+          charactersIsEmpty: widget.charactersIsEmpty,
+          staffQueryTimeout: widget.staffQueryTimeout,
+          staffIsEmpty: widget.staffIsEmpty,
+          loadMoreComments: ({bool loadMore = false}) =>
+              loadMore ? widget.onLoadMoreComments() : widget.onRetryComments(),
+          loadCharacters: widget.onRetryCharacters,
+          loadStaff: widget.onRetryStaff,
+          commentsList: widget.controller.commentsList.toList(growable: false),
+          commentsIsLoading: widget.commentsIsLoading,
+          onWriteReview: widget.onWriteReview,
+          characterList: widget.controller.characterList,
+          staffList: widget.controller.staffList,
+          relationList: widget.controller.relationList,
+          relationsIsLoading: widget.controller.relationsIsLoading,
+          relationsQueryTimeout: widget.controller.relationsQueryTimeout,
+          relationsHasLoaded: widget.controller.relationsHasLoaded,
+          loadRelations: widget.onRetryRelations,
+          isLoading: false,
+          // A standalone detail page has no tab strip to return to. Moving
+          // above the comments list must never be interpreted as route back.
+          onNavigateToTabs: () {},
+        ),
+      ),
+    ),
+  );
 }
 
 class _InfoHeaderBackground extends StatelessWidget {
