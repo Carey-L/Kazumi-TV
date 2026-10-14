@@ -50,3 +50,5 @@ android/build/reports/problems/
 
 # Local release credentials injected by the TV build scripts
 .kazumi_build_defines.env
+
+.claude
