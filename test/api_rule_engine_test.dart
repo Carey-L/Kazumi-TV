@@ -115,6 +115,29 @@ void main() {
     expect(roads.roads[1].data.single, 'https://cdn-b.test/main.m3u8');
   });
 
+  test('builds API search detail URLs from bare source ids', () {
+    final result = engine.parseSearch(
+      '{"data":[{"name":"示例","id":"a/b ?"}]}',
+      ApiSearchConfig(
+        listPath: r'$.data[*]',
+        namePath: r'$.name',
+        sourcePath: r'$.id',
+        sourceTemplate: 'https://example.com/GV@source',
+      ),
+    );
+
+    expect(result.items.single.src, 'https://example.com/GVa%2Fb%20%3F');
+  });
+
+  test('rejects API search detail templates without @source', () {
+    expect(
+      () => engine.validateSearchConfig(
+        ApiSearchConfig(sourceTemplate: 'https://example.com/details'),
+      ),
+      throwsA(isA<ApiRuleFormatException>()),
+    );
+  });
+
   test('parses TvTFun chapters and constructs playback page URLs', () {
     final raw = jsonEncode({
       'data': {
