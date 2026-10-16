@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:kazumi/bean/widget/tv_text_field.dart';
 import 'package:kazumi/pages/plugin_editor/rule_management_widgets.dart';
+import 'package:kazumi/utils/platform_variant.dart';
 
-class EditorTextField extends StatelessWidget {
+class EditorTextField extends StatefulWidget {
   const EditorTextField({
     super.key,
     required this.controller,
@@ -18,27 +20,53 @@ class EditorTextField extends StatelessWidget {
   final int maxLines;
 
   @override
+  State<EditorTextField> createState() => _EditorTextFieldState();
+}
+
+class _EditorTextFieldState extends State<EditorTextField> {
+  late final FocusNode _focusNode = FocusNode(debugLabel: widget.label);
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final textField = isTvBuild
+        ? TvTextField(
+            controller: widget.controller,
+            focusNode: _focusNode,
+            maxLines: widget.maxLines,
+            autocorrect: false,
+            enableSuggestions: false,
+            style: widget.maxLines > 1
+                ? theme.textTheme.bodyMedium?.copyWith(fontFamily: 'monospace')
+                : null,
+            decoration: ruleInputDecoration(context, hint: widget.hint),
+          )
+        : TextField(
+            controller: widget.controller,
+            maxLines: widget.maxLines,
+            autocorrect: false,
+            enableSuggestions: false,
+            style: widget.maxLines > 1
+                ? theme.textTheme.bodyMedium?.copyWith(fontFamily: 'monospace')
+                : null,
+            decoration: ruleInputDecoration(context, hint: widget.hint),
+          );
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text(label, style: theme.textTheme.labelLarge),
+      Text(widget.label, style: theme.textTheme.labelLarge),
       const SizedBox(height: 8),
       Semantics(
-        label: label,
-        child: TextField(
-          controller: controller,
-          maxLines: maxLines,
-          autocorrect: false,
-          enableSuggestions: false,
-          style: maxLines > 1
-              ? theme.textTheme.bodyMedium?.copyWith(fontFamily: 'monospace')
-              : null,
-          decoration: ruleInputDecoration(context, hint: hint),
-        ),
+        label: widget.label,
+        child: textField,
       ),
-      if (helper != null) ...[
+      if (widget.helper != null) ...[
         const SizedBox(height: 6),
-        Text(helper!,
+        Text(widget.helper!,
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       ],

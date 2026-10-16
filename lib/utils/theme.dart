@@ -81,6 +81,20 @@ ThemeData buildKazumiTheme({
     hoverColor: primary.withValues(alpha: 0.16),
     materialTapTargetSize: MaterialTapTargetSize.padded,
     visualDensity: const VisualDensity(horizontal: 1, vertical: 1),
+    inputDecorationTheme: InputDecorationThemeData(
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: kTvFocusBorderColor, width: 3),
+      ),
+    ),
+    searchBarTheme: SearchBarThemeData(
+      side: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.focused)) {
+          return const BorderSide(color: kTvFocusBorderColor, width: 3);
+        }
+        return null;
+      }),
+    ),
     iconButtonTheme: IconButtonThemeData(style: buttonStyle),
     textButtonTheme: TextButtonThemeData(style: buttonStyle),
     filledButtonTheme: FilledButtonThemeData(style: buttonStyle),

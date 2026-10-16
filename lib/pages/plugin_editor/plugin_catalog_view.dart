@@ -9,6 +9,7 @@ import 'package:kazumi/bean/widget/kazumi_menu.dart';
 import 'package:kazumi/bean/widget/empty_state_widget.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
 import 'package:kazumi/bean/widget/state_presentation.dart';
+import 'package:kazumi/bean/widget/tv_text_field.dart';
 import 'package:kazumi/modules/plugin/plugin_http_module.dart';
 import 'package:kazumi/pages/plugin_editor/plugin_update_actions.dart';
 import 'package:kazumi/pages/plugin_editor/rule_management_widgets.dart';
@@ -44,6 +45,7 @@ class PluginCatalogView extends StatefulWidget {
 
 class _PluginCatalogViewState extends State<PluginCatalogView> {
   final _search = TextEditingController();
+  final _searchFocusNode = FocusNode(debugLabel: '规则仓库搜索');
   final Set<String> _installing = {};
   _CatalogSort _sort = _CatalogSort.lastUpdate;
   _CatalogFilter _filter = _CatalogFilter.all;
@@ -65,6 +67,7 @@ class _PluginCatalogViewState extends State<PluginCatalogView> {
   @override
   void dispose() {
     _search.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -171,8 +174,9 @@ class _PluginCatalogViewState extends State<PluginCatalogView> {
           icon: Icons.travel_explore_rounded,
         ),
         const SizedBox(height: 20),
-        TextField(
+        TvTextField(
           controller: _search,
+          focusNode: _searchFocusNode,
           onChanged: (_) => setState(() {}),
           decoration: ruleInputDecoration(context,
               hint: '搜索规则或作者',

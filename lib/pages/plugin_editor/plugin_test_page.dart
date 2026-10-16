@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/bean/settings/settings_detail_scaffold.dart';
 import 'package:kazumi/bean/widget/loading_indicator.dart';
+import 'package:kazumi/bean/widget/tv_text_field.dart';
 import 'package:kazumi/modules/roads/road_module.dart';
 import 'package:kazumi/modules/search/plugin_search_module.dart';
 import 'package:kazumi/pages/plugin_editor/rule_management_widgets.dart';
@@ -31,6 +32,7 @@ class PluginTestPage extends StatefulWidget {
 class _PluginTestPageState extends State<PluginTestPage> {
   late final Plugin plugin;
   final testKeywordController = TextEditingController();
+  final _keywordFocusNode = FocusNode(debugLabel: '规则测试关键词');
   final searchRawScrollController = ScrollController();
   final chapterScrollController = ScrollController();
   final fragmentScrollController = ScrollController();
@@ -71,6 +73,7 @@ class _PluginTestPageState extends State<PluginTestPage> {
   void dispose() {
     _testCancelToken?.cancel();
     testKeywordController.dispose();
+    _keywordFocusNode.dispose();
     searchRawScrollController.dispose();
     chapterScrollController.dispose();
     fragmentScrollController.dispose();
@@ -305,8 +308,9 @@ class _PluginTestPageState extends State<PluginTestPage> {
     );
   }
 
-  Widget _buildKeywordInput() => TextField(
+  Widget _buildKeywordInput() => TvTextField(
         controller: testKeywordController,
+        focusNode: _keywordFocusNode,
         decoration: ruleInputDecoration(context,
             label: '测试关键词',
             hint: '输入番剧名称',

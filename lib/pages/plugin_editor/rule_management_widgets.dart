@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kazumi/bean/widget/tv_focus_highlight.dart';
+import 'package:kazumi/utils/platform_variant.dart';
+import 'package:kazumi/utils/theme.dart';
 
 class RulePageIntro extends StatelessWidget {
   const RulePageIntro({
@@ -133,6 +135,7 @@ InputDecoration ruleInputDecoration(
   Widget? suffix,
 }) {
   final colors = Theme.of(context).colorScheme;
+  final focusColor = isTvBuild ? kTvFocusBorderColor : colors.primary;
   return InputDecoration(
     labelText: label,
     hintText: hint,
@@ -151,7 +154,7 @@ InputDecoration ruleInputDecoration(
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: colors.primary, width: 2),
+      borderSide: BorderSide(color: focusColor, width: isTvBuild ? 3 : 2),
     ),
   );
 }

@@ -19,6 +19,10 @@ class TvTextField extends StatefulWidget {
     this.onChanged,
     this.onTapOutside,
     this.textAlignVertical,
+    this.maxLines = 1,
+    this.minLines,
+    this.autocorrect = true,
+    this.enableSuggestions = true,
     this.autofocus = false,
     this.enabled = true,
   });
@@ -33,6 +37,10 @@ class TvTextField extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final void Function(PointerDownEvent)? onTapOutside;
   final TextAlignVertical? textAlignVertical;
+  final int? maxLines;
+  final int? minLines;
+  final bool autocorrect;
+  final bool enableSuggestions;
   final bool autofocus;
   final bool enabled;
 
@@ -56,9 +64,12 @@ class _TvTextFieldState extends State<TvTextField> {
   }
 
   void _releaseWhenUnfocused() {
-    if (!widget.focusNode.hasFocus && _editing && mounted) {
+    if (!mounted) return;
+    if (!widget.focusNode.hasFocus && _editing) {
       setState(() => _editing = false);
+      return;
     }
+    setState(() {});
   }
 
   bool _isConfirm(LogicalKeyboardKey key) =>
@@ -87,6 +98,11 @@ class _TvTextFieldState extends State<TvTextField> {
     if (_isConfirm(key) && !_editing) {
       setState(() => _editing = true);
       widget.focusNode.requestFocus();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && widget.focusNode.hasFocus) {
+          SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+        }
+      });
       return KeyEventResult.handled;
     }
     // While not editing, arrows move focus between items instead of being
@@ -121,6 +137,11 @@ class _TvTextFieldState extends State<TvTextField> {
         readOnly: !_editing,
         enabled: widget.enabled,
         autofocus: widget.autofocus,
+        maxLines: widget.maxLines,
+        minLines: widget.minLines,
+        autocorrect: widget.autocorrect,
+        enableSuggestions: widget.enableSuggestions,
+        showCursor: widget.focusNode.hasFocus,
         keyboardType: widget.keyboardType,
         textInputAction: widget.textInputAction,
         textAlignVertical: widget.textAlignVertical,
