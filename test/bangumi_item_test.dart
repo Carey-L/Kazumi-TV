@@ -7,6 +7,7 @@ void main() {
       'id': 1,
       'type': 2,
       'name': 'Test anime',
+      'images': const <String, String>{},
       'rating': {
         'rank': 0,
         'score': 0,
@@ -25,6 +26,7 @@ void main() {
       'id': 1,
       'type': 2,
       'name': 'Test anime',
+      'images': const <String, String>{},
       'rating': {
         'rank': 0,
         'score': 0,
