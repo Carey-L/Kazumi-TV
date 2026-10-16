@@ -31,6 +31,15 @@ class BangumiInfoCardV extends StatefulWidget {
 class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
   int touchedIndex = -1;
 
+  String get _episodeProgressText {
+    final updated = widget.bangumiItem.updatedEpisodes;
+    final total = widget.bangumiItem.eps;
+    if (updated == 0 && total > 0) return '共 $total 话';
+    if (total > 0) return '已更新 $updated / 共 $total 话';
+    if (updated > 0) return '已更新 $updated 话';
+    return '暂无集数信息';
+  }
+
   Widget get voteBarChart {
     return Flexible(
       child: Column(
@@ -191,6 +200,18 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                         : widget.bangumiItem.airDate,
                                     style: TextStyle(
                                       fontSize: 30,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text('更新进度:'),
+                                  Text(
+                                    _episodeProgressText,
+                                    style: TextStyle(
+                                      fontSize: 24,
                                       fontWeight: FontWeight.bold,
                                       color: Theme.of(
                                         context,

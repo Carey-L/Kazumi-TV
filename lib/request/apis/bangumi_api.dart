@@ -366,11 +366,143 @@ class BangumiApi {
                 ApiEndpoints.bangumiInfoByIDNext,
             [id]),
       );
-      return BangumiItem.fromJson(jsonData);
+      final item = BangumiItem.fromJson(jsonData);
+      try {
+        // `total_episodes` includes SP/OP/ED and future episodes. Count aired
+        // main episodes, with a narrow fallback for misclassified finales.
+        final progressData = await _client.get(
+          ApiEndpoints.formatUrl(
+            ApiEndpoints.bangumiAPIDomain + ApiEndpoints.bangumiInfoByID,
+            [id],
+          ),
+        );
+        item.eps = (progressData['eps'] as num?)?.toInt() ?? item.eps;
+        item.updatedEpisodes = await _getAiredEpisodeCount(id, item.eps);
+      } catch (e) {
+        KazumiLogger().w(
+          'Network: resolve Bangumi episode progress failed',
+          error: e,
+        );
+      }
+      return item;
     } catch (e) {
       KazumiLogger().e('Network: resolve bangumi item failed', error: e);
       return null;
     }
+  }
+
+  static Future<int> _getAiredEpisodeCount(
+    int subjectId,
+    int plannedEpisodeCount,
+  ) async {
+    const limit = 100;
+    var offset = 0;
+    int? total;
+    var aired = 0;
+    var mainEpisodeCount = 0;
+    var airedFallbackEpisodeCount = 0;
+    var fallbackEpisodeCount = 0;
+    var hasFutureMainAirDate = false;
+    var hasFutureFallbackAirDate = false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    do {
+      final response = await _client.get(
+        ApiEndpoints.bangumiAPIDomain + ApiEndpoints.bangumiEpisodeByID,
+        queryParameters: {
+          'subject_id': subjectId,
+          'limit': limit,
+          'offset': offset,
+        },
+      );
+      total ??= (response['total'] as num?)?.toInt();
+      final data = response['data'];
+      if (data is! List || data.isEmpty) break;
+
+      for (final episode in data.whereType<Map>()) {
+        final type = (episode['type'] as num?)?.toInt();
+        final sort = (episode['sort'] as num?)?.toDouble();
+        final isMainEpisode = type == 0;
+        // A few entries, such as Super Dragon Ball Heroes episode 20, are
+        // marked SP despite being within the declared main episode sequence.
+        final isFallbackEpisode =
+            type == 1 &&
+            plannedEpisodeCount > 0 &&
+            sort != null &&
+            sort > 0 &&
+            sort <= plannedEpisodeCount;
+        if (!isMainEpisode && !isFallbackEpisode) continue;
+
+        if (isMainEpisode) {
+          mainEpisodeCount++;
+        } else {
+          fallbackEpisodeCount++;
+        }
+        final airDate = _parseEpisodeAirDate(
+          episode['airdate']?.toString() ?? '',
+        );
+        if (airDate == null) continue;
+        final releaseDate = DateTime(airDate.year, airDate.month, airDate.day);
+        if (releaseDate.isAfter(today)) {
+          if (isMainEpisode) {
+            hasFutureMainAirDate = true;
+          } else {
+            hasFutureFallbackAirDate = true;
+          }
+        } else {
+          if (isMainEpisode) {
+            aired++;
+          } else {
+            airedFallbackEpisodeCount++;
+          }
+        }
+      }
+      offset += data.length;
+    } while (total == null || offset < total);
+
+    final missingMainEpisodes =
+        plannedEpisodeCount > mainEpisodeCount
+            ? plannedEpisodeCount - mainEpisodeCount
+            : 0;
+    final usableFallbackEpisodes =
+        fallbackEpisodeCount > missingMainEpisodes
+            ? missingMainEpisodes
+            : fallbackEpisodeCount;
+    final airedUsableFallbackEpisodes =
+        airedFallbackEpisodeCount > usableFallbackEpisodes
+            ? usableFallbackEpisodes
+            : airedFallbackEpisodeCount;
+    final countedEpisodes = mainEpisodeCount + usableFallbackEpisodes;
+    final hasFutureAirDate = hasFutureMainAirDate ||
+        (usableFallbackEpisodes > 0 && hasFutureFallbackAirDate);
+
+    // Older completed shows may contain an episode with a missing or malformed
+    // airdate. When no relevant episode is known to be in the future, every
+    // returned episode in the declared sequence has already aired.
+    return hasFutureAirDate
+        ? aired + airedUsableFallbackEpisodes
+        : countedEpisodes;
+  }
+
+  static DateTime? _parseEpisodeAirDate(String value) {
+    final normalized = value.trim();
+    final strictDate = DateTime.tryParse(normalized);
+    if (strictDate != null) return strictDate;
+
+    // Some legacy Bangumi data omits the leading zero, such as `2018-01-7`.
+    final match = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})$')
+        .firstMatch(normalized);
+    if (match == null) return null;
+    final year = int.tryParse(match.group(1)!);
+    final month = int.tryParse(match.group(2)!);
+    final day = int.tryParse(match.group(3)!);
+    if (year == null || month == null || day == null) return null;
+
+    final parsed = DateTime(year, month, day);
+    return parsed.year == year && parsed.month == month && parsed.day == day
+        ? parsed
+        : null;
   }
 
   static Future<List<BangumiRelation>> getBangumiRelationsByID(int id) async {

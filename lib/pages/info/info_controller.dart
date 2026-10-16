@@ -127,6 +127,8 @@ abstract class _InfoController with Store {
       bangumiItem.ratingScore = value.ratingScore;
       bangumiItem.votes = value.votes;
       bangumiItem.votesCount = value.votesCount;
+      bangumiItem.eps = value.eps;
+      bangumiItem.updatedEpisodes = value.updatedEpisodes;
       final incomingInterest = value.interest;
       final previousInterest = bangumiItem.interest;
       if (incomingInterest == null) {

@@ -69,13 +69,6 @@ class _InfoPageState extends State<InfoPage>
   bool get _isShowingBangumiInfoSkeleton =>
       infoController.isLoading || _showBangumiInfoSkeleton;
 
-  bool _needsBangumiInfoRefresh(BangumiItem bangumiItem) {
-    final votesCount = bangumiItem.votesCount;
-    final missingVoteDistribution =
-        votesCount.isEmpty || bangumiItem.votes <= 0 || votesCount.length < 10;
-    return bangumiItem.summary == '' || missingVoteDistribution;
-  }
-
   Future<void> loadCharacters() async {
     if (charactersIsLoading) return;
     setState(() {
@@ -357,10 +350,8 @@ class _InfoPageState extends State<InfoPage>
     infoController.staffList.clear();
     infoController.clearRelations();
     infoController.pluginSearchResponseList.clear();
-    if (_needsBangumiInfoRefresh(infoController.bangumiItem)) {
-      _showBangumiInfoSkeleton = true;
-      _loadBangumiInfo();
-    }
+    _showBangumiInfoSkeleton = true;
+    _loadBangumiInfo();
     infoTabController = TabController(length: _infoTabs.length, vsync: this);
     showRating = GStorage.getSetting(SettingsKeys.showRating);
   }

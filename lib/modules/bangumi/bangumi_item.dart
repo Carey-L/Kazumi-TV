@@ -37,6 +37,12 @@ class BangumiItem {
   List<int> votesCount;
   @HiveField(14, defaultValue: '')
   String info;
+
+  /// 条目资料中填写的总话数。
+  int eps;
+
+  /// 本次详情请求中统计到的已更新正片数，不写入本地缓存。
+  int updatedEpisodes;
   // Calendar metadata is separate from counted user tags and is not persisted.
   final List<String> metaTags;
   BangumiInterest? interest;
@@ -57,6 +63,8 @@ class BangumiItem {
     required this.votes,
     required this.votesCount,
     required this.info,
+    this.eps = 0,
+    this.updatedEpisodes = 0,
     this.metaTags = const [],
     this.interest,
   });
@@ -164,6 +172,7 @@ class BangumiItem {
       votes: json['rating']['total'] ?? 0,
       votesCount: parseBangumiVoteCount(json),
       info: json['info'] ?? '',
+      eps: (json['eps'] as num?)?.toInt() ?? 0,
       metaTags: rawMetaTags is List
           ? rawMetaTags
               .whereType<String>()
