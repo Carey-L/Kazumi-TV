@@ -124,7 +124,7 @@
           - name: Package split Android build outputs
             run: |
               for abi in armeabi-v7a arm64-v8a x86_64; do
-                cp "build/app/outputs/flutter-apk/app-tv-${abi}-release.apk" \
+                cp "build/app/outputs/flutter-apk/app-${abi}-tv-release.apk" \
                   "Kazumi_android_${RELEASE_TAG}_${abi}.apk"
               done
             shell: bash
