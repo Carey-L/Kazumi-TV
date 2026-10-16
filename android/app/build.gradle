@@ -22,6 +22,15 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+def pubspecVersionSuffix = ''
+def pubspecFile = rootProject.file('../pubspec.yaml')
+if (pubspecFile.exists()) {
+    def versionSuffixMatcher = (pubspecFile.getText('UTF-8') =~ /(?m)^\s*version_suffix:\s*['\"]?([^#'\"\s]+)['\"]?\s*(?:#.*)?$/)
+    if (versionSuffixMatcher.find()) {
+        pubspecVersionSuffix = versionSuffixMatcher.group(1)
+    }
+}
+
 def signingProperties = new Properties()
 def signingPropertiesFile = rootProject.file('key.properties')
 if (signingPropertiesFile.exists()) {
@@ -107,7 +116,7 @@ android {
         tv {
             dimension "device"
             applicationIdSuffix ".tv"
-            versionNameSuffix "-tv"
+            versionNameSuffix "-tv.${pubspecVersionSuffix}"
         }
     }
 }

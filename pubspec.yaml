@@ -1,7 +1,8 @@
 name: kazumi
 description: "A new Flutter project."
 publish_to: "none"
-version: 2.3.13+20313
+version: 2.3.8+20318
+version_suffix: 1
 
 environment:
   sdk: ">=3.10.0 <4.0.0"
