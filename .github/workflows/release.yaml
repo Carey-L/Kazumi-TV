@@ -110,8 +110,23 @@
               --dart-define=KAZUMI_APPID=$KAZUMI_APPID
               --dart-define=KAZUMI_KEY=$KAZUMI_KEY
             shell: bash
-          - name: Package android build output
+          - name: Package universal Android build output
             run: cp build/app/outputs/flutter-apk/app-tv-release.apk "Kazumi_android_${RELEASE_TAG}.apk"
+            shell: bash
+          - name: Build split Android APKs
+            run: >-
+              flutter build apk --split-per-abi --flavor tv
+              --dart-define=DANDANAPI_APPID=$DANDANAPI_APPID
+              --dart-define=DANDANAPI_KEY=$DANDANAPI_KEY
+              --dart-define=KAZUMI_APPID=$KAZUMI_APPID
+              --dart-define=KAZUMI_KEY=$KAZUMI_KEY
+            shell: bash
+          - name: Package split Android build outputs
+            run: |
+              for abi in armeabi-v7a arm64-v8a x86_64; do
+                cp "build/app/outputs/flutter-apk/app-tv-${abi}-release.apk" \
+                  "Kazumi_android_${RELEASE_TAG}_${abi}.apk"
+              done
             shell: bash
           - name: Upload android outputs
             uses: actions/upload-artifact@v4
@@ -132,7 +147,14 @@
               name: android_outputs
               path: release
           - name: Verify release artifact
-            run: test -n "$(find release -maxdepth 1 -name 'Kazumi_android_*.apk' -print -quit)"
+            run: |
+              for filename in \
+                "Kazumi_android_${RELEASE_TAG}.apk" \
+                "Kazumi_android_${RELEASE_TAG}_armeabi-v7a.apk" \
+                "Kazumi_android_${RELEASE_TAG}_arm64-v8a.apk" \
+                "Kazumi_android_${RELEASE_TAG}_x86_64.apk"; do
+                test -f "release/${filename}"
+              done
             shell: bash
           - name: Create release
             uses: softprops/action-gh-release@v2
